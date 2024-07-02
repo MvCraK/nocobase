@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import lodash from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import injectTargetCollection from '../decorators/target-collection-decorator';
@@ -103,9 +112,21 @@ export abstract class SingleRelationRepository extends RelationRepository {
       transaction,
     });
 
+    if (options.hooks !== false) {
+      await this.db.emitAsync(`${this.targetCollection.name}.afterUpdateWithAssociations`, target, {
+        ...options,
+        transaction,
+      });
+      const eventName = `${this.targetCollection.name}.afterSaveWithAssociations`;
+      await this.db.emitAsync(eventName, target, { ...options, transaction });
+    }
+
     return target;
   }
 
+  /**
+   * @internal
+   */
   accessors() {
     return <SingleAssociationAccessors>super.accessors();
   }

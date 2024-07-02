@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { fireEvent, render, screen } from '@nocobase/test/client';
 import React from 'react';
-import { formatNumberWithSeparator, formatUnitConversion, scientificNotation } from '../ReadPretty';
+import { formatNumberWithSeparator, formatUnitConversion, scientificNotation, formatNumber } from '../ReadPretty';
 import App2 from '../demos/addonBefore&addonAfter';
 import App3 from '../demos/highPrecisionDecimals';
 import App1 from '../demos/inputNumber';
@@ -89,6 +98,15 @@ describe('ReadPretty:formatNumberWithSeparator', () => {
     const formatted = formatNumberWithSeparator(1234567.89, '0,0.00', 1);
     expect(formatted).toBe('1,234,567.9');
   });
+
+  test('Format number with custom 0 0,00 separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89, '0 0,00', 1);
+    expect(formatted).toBe('1 234 567.9');
+  });
+  test('Format number with custom 0.00 separator', () => {
+    const formatted = formatNumberWithSeparator(1234567.89, '0.00', 1);
+    expect(formatted).toBe('1234567.9');
+  });
 });
 describe('ReadPretty:formatUnitConversion', () => {
   // Test case 1: Multiply a value by 2
@@ -105,6 +123,21 @@ describe('ReadPretty:formatUnitConversion', () => {
   test('0.1*0.2', () => {
     const result = formatUnitConversion(0.1, '*', 0.2);
     expect(result).toBe(0.02);
+  });
+});
+
+describe('ReadPretty:MAX_SAFE_INTEGER', () => {
+  test('value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER', () => {
+    const result = formatNumber({
+      value: '1691195350092210177',
+      formatStyle: 'normal',
+      step: 1,
+    });
+    expect(result).toBe('1,691,195,350,092,210,177');
+  });
+  test('normal value', () => {
+    const result = formatNumber({ value: 3, formatStyle: 'normal', step: 1 });
+    expect(result).toBe('3');
   });
 });
 

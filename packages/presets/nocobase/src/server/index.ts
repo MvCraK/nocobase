@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 
@@ -5,16 +14,16 @@ export class PresetNocoBase extends Plugin {
   builtInPlugins = [
     'data-source-manager',
     'error-handler',
-    'collection-manager',
+    'data-source-main',
     'ui-schema-storage',
     // 'ui-routes-storage',
     'file-manager',
     'system-settings',
-    'sequence-field',
+    'field-sequence',
     'verification',
     'users',
     'acl',
-    'china-region',
+    'field-china-region',
     'workflow',
     'workflow-action-trigger',
     'workflow-aggregate',
@@ -26,15 +35,16 @@ export class PresetNocoBase extends Plugin {
     'workflow-request',
     'workflow-sql',
     'client',
-    'export',
-    'import',
+    'action-import',
+    'action-export',
     'backup-restore',
-    'iframe-block',
-    'formula-field',
+    'block-iframe',
+    'block-workbench',
+    'field-formula',
     'data-visualization',
     'auth',
     'logger',
-    'custom-request',
+    'action-custom-request',
     'calendar',
     'action-bulk-update',
     'action-bulk-edit',
@@ -42,24 +52,24 @@ export class PresetNocoBase extends Plugin {
     'kanban',
     'action-duplicate',
     'action-print',
+    'collection-sql',
   ];
 
   localPlugins = [
     'multi-app-manager>=0.7.0-alpha.1',
-    'audit-logs>=0.7.1-alpha.4',
+    // 'audit-logs>=0.7.1-alpha.4',
     'map>=0.8.1-alpha.3',
-    'saml>=0.8.1-alpha.3',
-    'snapshot-field>=0.8.1-alpha.3',
+    // 'snapshot-field>=0.8.1-alpha.3',
     'graph-collection-manager>=0.9.0-alpha.1',
-    'multi-app-share-collection>=0.9.2-alpha.1',
-    'oidc>=0.9.2-alpha.1',
+    // 'multi-app-share-collection>=0.9.2-alpha.1',
     'mobile-client>=0.10.0-alpha.2',
     'api-keys>=0.10.1-alpha.1',
-    'localization-management>=0.11.1-alpha.1',
+    'localization>=0.11.1-alpha.1',
     'theme-editor>=0.11.1-alpha.1',
     'api-doc>=0.13.0-alpha.1',
-    'cas>=0.13.0-alpha.5',
-    'sms-auth>=0.10.0-alpha.2',
+    'auth-sms>=0.10.0-alpha.2',
+    'field-markdown-vditor>=0.21.0-alpha.16',
+    'workflow-mailer',
   ];
 
   splitNames(name: string) {
@@ -80,21 +90,17 @@ export class PresetNocoBase extends Plugin {
   }
 
   async getPackageJson(name) {
-    let packageName = name;
-    try {
-      packageName = await PluginManager.getPackageName(name);
-    } catch (error) {
-      packageName = name;
-    }
+    const { packageName } = await PluginManager.parseName(name);
     const packageJson = await PluginManager.getPackageJson(packageName);
-    return packageJson;
+    return { ...packageJson, name: packageName };
   }
 
   async allPlugins() {
     return (
       await Promise.all(
-        this.getBuiltInPlugins().map(async (name) => {
-          const packageJson = await this.getPackageJson(name);
+        this.getBuiltInPlugins().map(async (pkgOrName) => {
+          const { name } = await PluginManager.parseName(pkgOrName);
+          const packageJson = await this.getPackageJson(pkgOrName);
           return {
             name,
             packageName: packageJson.name,
@@ -107,8 +113,8 @@ export class PresetNocoBase extends Plugin {
     ).concat(
       await Promise.all(
         this.getLocalPlugins().map(async (plugin) => {
-          const name = plugin[0];
-          const packageJson = await this.getPackageJson(name);
+          const { name } = await PluginManager.parseName(plugin[0]);
+          const packageJson = await this.getPackageJson(plugin[0]);
           return { name, packageName: packageJson.name, version: packageJson.version };
         }),
       ),
@@ -119,8 +125,9 @@ export class PresetNocoBase extends Plugin {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
     const items = (await repository.find()).map((item) => item.name);
     const plugins = await Promise.all(
-      this.getBuiltInPlugins().map(async (name) => {
-        const packageJson = await this.getPackageJson(name);
+      this.getBuiltInPlugins().map(async (pkgOrName) => {
+        const { name } = await PluginManager.parseName(pkgOrName);
+        const packageJson = await this.getPackageJson(pkgOrName);
         return {
           name,
           packageName: packageJson.name,
@@ -137,8 +144,9 @@ export class PresetNocoBase extends Plugin {
           continue;
         }
       }
-      const name = plugin[0];
-      const packageJson = await this.getPackageJson(name);
+      const pkgOrName = plugin[0];
+      const { name } = await PluginManager.parseName(pkgOrName);
+      const packageJson = await this.getPackageJson(pkgOrName);
       plugins.push({ name, packageName: packageJson.name, version: packageJson.version });
     }
     return plugins;

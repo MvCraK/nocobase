@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '../application/Plugin';
 import { CreateChildInitializer } from '../modules/actions/add-child/CreateChildInitializer';
 import { CreateActionInitializer } from '../modules/actions/add-new/CreateActionInitializer';
@@ -5,7 +14,6 @@ import {
   createFormBlockInitializers,
   createFormBlockInitializers_deprecated,
 } from '../modules/actions/add-new/createFormBlockInitializers';
-import { CustomizeAddRecordActionInitializer } from '../modules/actions/add-record/CustomizeAddRecordActionInitializer';
 import {
   customizeCreateFormBlockInitializers,
   customizeCreateFormBlockInitializers_deprecated,
@@ -16,11 +24,12 @@ import { DisassociateActionInitializer } from '../modules/actions/disassociate/D
 import { ExpandableActionInitializer } from '../modules/actions/expand-collapse/ExpandableActionInitializer';
 import { FilterActionInitializer } from '../modules/actions/filter/FilterActionInitializer';
 import { RefreshActionInitializer } from '../modules/actions/refresh/RefreshActionInitializer';
-import { SaveRecordActionInitializer } from '../modules/actions/save-record/SaveRecordActionInitializer';
 import { CreateSubmitActionInitializer } from '../modules/actions/submit/CreateSubmitActionInitializer';
 import { UpdateSubmitActionInitializer } from '../modules/actions/submit/UpdateSubmitActionInitializer';
 import { UpdateRecordActionInitializer } from '../modules/actions/update-record/UpdateRecordActionInitializer';
 import { PopupActionInitializer } from '../modules/actions/view-edit-popup/PopupActionInitializer';
+import { LinkActionInitializer } from '../modules/actions/link/LinkActionInitializer';
+
 import { recordFormBlockInitializers } from '../modules/actions/view-edit-popup/RecordFormBlockInitializers';
 import { UpdateActionInitializer } from '../modules/actions/view-edit-popup/UpdateActionInitializer';
 import { ViewActionInitializer } from '../modules/actions/view-edit-popup/ViewActionInitializer';
@@ -38,7 +47,6 @@ import {
   readPrettyFormItemInitializers_deprecated,
 } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormItemInitializers';
 import { RecordReadPrettyFormBlockInitializer } from '../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
-import { CreateFormBlockInitializer } from '../modules/blocks/data-blocks/form/CreateFormBlockInitializer';
 import { FormBlockInitializer } from '../modules/blocks/data-blocks/form/FormBlockInitializer';
 import { RecordFormBlockInitializer } from '../modules/blocks/data-blocks/form/RecordFormBlockInitializer';
 import {
@@ -113,6 +121,7 @@ import {
   recordBlockInitializers_deprecated,
   subTableActionInitializers,
   subTableActionInitializers_deprecated,
+  tabPaneInitializers,
   tabPaneInitializersForBulkEditFormBlock,
   tabPaneInitializersForRecordBlock,
   tabPaneInitializers_deprecated,
@@ -145,7 +154,6 @@ export class SchemaInitializerPlugin extends Plugin {
       ...initializerComponents,
       ...items,
       DestroyActionInitializer,
-      CreateFormBlockInitializer,
       FormBlockInitializer,
       RecordFormBlockInitializer,
       TableBlockInitializer,
@@ -161,12 +169,11 @@ export class SchemaInitializerPlugin extends Plugin {
       TableCollectionFieldInitializer,
       CollectionFieldInitializer,
       CreateActionInitializer,
-      CustomizeAddRecordActionInitializer,
       CreateChildInitializer,
       ViewActionInitializer,
       UpdateActionInitializer,
       PopupActionInitializer,
-      SaveRecordActionInitializer,
+      LinkActionInitializer,
       UpdateRecordActionInitializer,
       CreateSubmitActionInitializer,
       UpdateSubmitActionInitializer,
@@ -225,6 +232,7 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(tableSelectorInitializers_deprecated);
     this.app.schemaInitializerManager.add(tableSelectorInitializers);
     this.app.schemaInitializerManager.add(tabPaneInitializers_deprecated);
+    this.app.schemaInitializerManager.add(tabPaneInitializers);
     this.app.schemaInitializerManager.add(tabPaneInitializersForRecordBlock);
     this.app.schemaInitializerManager.add(tabPaneInitializersForBulkEditFormBlock);
     this.app.schemaInitializerManager.add(menuItemInitializer_deprecated);

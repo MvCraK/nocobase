@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { ISchema, Schema, useForm } from '@formily/react';
 import {
@@ -12,7 +21,7 @@ import {
 import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartConfigContext } from '../configure';
-import formatters from '../block/formatters';
+import formatters from '../configure/formatters';
 import { useChartsTranslation } from '../locale';
 import { ChartRendererContext } from '../renderer';
 import { getField, getSelectedFields, parseField, processData } from '../utils';

@@ -1,10 +1,27 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
-import { ActionContextProvider, DndContext, RecordProvider, useCollectionParentRecordData } from '@nocobase/client';
+import {
+  ActionContextProvider,
+  DndContext,
+  RecordProvider,
+  useCollection,
+  useCollectionParentRecordData,
+  VariablePopupRecordProvider,
+} from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { KanbanCardContext } from './context';
+import { useKanbanTranslation } from './locale';
 
 const cardCss = css`
   .ant-card-body {
@@ -44,10 +61,10 @@ const cardCss = css`
     wordbreak: break-all;
     wordwrap: break-word;
   }
-  .ant-formily-item-label {
-    color: #8c8c8c;
-    fontweight: normal;
-  }
+  // .ant-formily-item-label {
+  //   color: #8c8c8c;
+  //   fontweight: normal;
+  // }
 `;
 
 const MemorizedRecursionField = React.memo(RecursionField);
@@ -55,6 +72,8 @@ MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
 export const KanbanCard: any = observer(
   () => {
+    const { t } = useKanbanTranslation();
+    const collection = useCollection();
     const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
       useContext(KanbanCardContext);
     const parentRecordData = useCollectionParentRecordData();
@@ -114,7 +133,9 @@ export const KanbanCard: any = observer(
         {cardViewerSchema && (
           <ActionContextProvider value={actionContextValue}>
             <RecordProvider record={card} parent={parentRecordData}>
-              <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
+              <VariablePopupRecordProvider recordData={card} collection={collection}>
+                <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
+              </VariablePopupRecordProvider>
             </RecordProvider>
           </ActionContextProvider>
         )}

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
@@ -216,9 +225,15 @@ export class Collection {
     return this.options.resource;
   }
 
+  setOption(key: string, value: any) {
+    this.options[key] = value;
+    return this;
+  }
+
   getOptions() {
     return this.options;
   }
+
   getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K] {
     return this.options[key];
   }
@@ -277,5 +292,9 @@ export class Collection {
   }
   hasField(name: SchemaKey) {
     return !!this.getField(name);
+  }
+
+  isTitleField(field: CollectionFieldOptions) {
+    return this.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
   }
 }

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const { Command } = require('commander');
 const { run } = require('../util');
 const path = require('path');
@@ -20,7 +29,6 @@ function addTestCommand(name, cli) {
     .arguments('[paths...]')
     .allowUnknownOption()
     .action(async (paths, opts) => {
-      process.argv.push('--disable-console-intercept');
       if (name === 'test:server') {
         process.env.TEST_ENV = 'server-side';
       } else if (name === 'test:client') {
@@ -60,7 +68,7 @@ function addTestCommand(name, cli) {
         process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
       }
 
-      const cliArgs = ['--max_old_space_size=14096', './node_modules/.bin/vitest', ...process.argv.slice(3)];
+      const cliArgs = ['--max_old_space_size=14096', './node_modules/vitest/vitest.mjs', ...process.argv.slice(3)];
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         await run('node', cliArgs);

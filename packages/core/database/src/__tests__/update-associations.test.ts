@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { updateAssociations } from '../update-associations';
@@ -231,6 +240,28 @@ describe('update associations', () => {
     afterEach(async () => {
       await db.close();
     });
+
+    it('should update association values', async () => {
+      const user1 = await User.repository.create({
+        values: {
+          name: 'u1',
+          posts: [{ name: 'u1t1' }],
+        },
+      });
+
+      // update with associations
+      const updateRes = await User.repository.update({
+        filterByTk: user1.get('id'),
+        values: {
+          name: 'u1',
+          posts: [{ id: user1.get('posts')[0].get('id'), name: 'u1t1' }],
+        },
+        updateAssociationValues: ['comments'],
+      });
+
+      expect(updateRes[0].toJSON()['posts'].length).toBe(1);
+    });
+
     it('user.posts', async () => {
       await User.model.create<any>({ name: 'user01' });
       await User.model.create<any>({ name: 'user02' });

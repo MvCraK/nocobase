@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 import { customAlphabet, nanoid } from 'nanoid';
@@ -23,14 +32,12 @@ export class NanoidField extends Field {
 
   bind() {
     super.bind();
-    this.on('beforeCreate', this.listener);
-    this.on('beforeUpdate', this.listener);
+    this.on('beforeValidate', this.listener);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeCreate', this.listener);
-    this.off('beforeUpdate', this.listener);
+    this.off('beforeValidate', this.listener);
   }
 }
 

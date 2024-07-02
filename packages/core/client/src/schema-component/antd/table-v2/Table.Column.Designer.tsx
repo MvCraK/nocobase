@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { set } from 'lodash';
+import _, { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
@@ -12,16 +21,15 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
+import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
+import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
-import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
-import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
-import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
-import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
-import _ from 'lodash';
 
 export const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -32,7 +40,7 @@ export const useLabelFields = (collectionName?: any) => {
   }
   const targetFields = getCollectionFields(collectionName);
   return targetFields
-    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean' && !field.isForeignKey)
+    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean')
     ?.map?.((field) => {
       return {
         value: field.name,

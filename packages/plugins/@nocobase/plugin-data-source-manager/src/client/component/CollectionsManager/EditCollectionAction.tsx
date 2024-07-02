@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -6,18 +15,18 @@ import {
   IField,
   RecordProvider,
   SchemaComponent,
-  tval,
   useAPIClient,
   useActionContext,
+  useCancelAction,
   useCollectionManager_deprecated,
   useCompile,
+  useDataSourceManager,
   useRecord,
   useRequest,
   useResourceActionContext,
   useResourceContext,
-  useCancelAction,
-  useDataSourceManager,
 } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
@@ -60,10 +69,10 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         properties: {
           ...omit(properties, 'category', 'inherits', 'moreOptions'),
           filterTargetKey: {
-            title: `{{ t("Filter target key",{ ns: "${NAMESPACE}" }) }}`,
+            title: `{{ t("Record unique key") }}`,
             type: 'single',
             description: tval(
-              'Filter data based on the specific field, with the requirement that the field value must be unique.',
+              'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
               { ns: NAMESPACE },
             ),
             'x-decorator': 'FormItem',
@@ -202,6 +211,7 @@ const EditCollectionAction = (props) => {
             createOnly: false,
             filterTargetKeyOptions,
             isView: record.view,
+            createMainOnly: true,
             ...scope,
           }}
         />

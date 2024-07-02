@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '@nocobase/database';
 import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -10,7 +19,7 @@ describe('workflow > action-trigger', () => {
   let db: Database;
   let agent;
   let PostRepo;
-  let CommentRepo;
+  let CategoryRepo;
   let WorkflowModel;
   let UserRepo;
   let users;
@@ -25,7 +34,7 @@ describe('workflow > action-trigger', () => {
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
-    CommentRepo = db.getCollection('comments').repository;
+    CategoryRepo = db.getCollection('categories').repository;
     UserRepo = db.getCollection('users').repository;
 
     users = await UserRepo.create({
@@ -458,6 +467,45 @@ describe('workflow > action-trigger', () => {
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1.context.data).toMatchObject({ title: 'c1' });
+    });
+  });
+
+  describe('associations actions', () => {
+    it('trigger on associated data', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const c1 = await CategoryRepo.create({ values: { title: 'c1' } });
+
+      const res1 = await userAgents[0].resource('categories.posts', c1.id).create({
+        values: { title: 'p1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[0].context.data).toMatchObject({ title: 'p1', categoryId: c1.id });
+
+      const res2 = await userAgents[0]
+        .post(`/categories/${c1.id}/posts:create`)
+        .query({ triggerWorkflows: `${workflow.key}` })
+        .send({
+          data: { title: 'p2' },
+        });
+
+      await sleep(500);
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(2);
     });
   });
 

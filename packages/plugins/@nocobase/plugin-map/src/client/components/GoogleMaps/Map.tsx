@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Loader } from '@googlemaps/js-api-loader';
@@ -12,6 +21,7 @@ import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
 import { Search } from './Search';
 import { getCurrentPosition, getIcon } from './utils';
+import { useMapHeight } from '../hook';
 
 export type OverlayOptions = google.maps.PolygonOptions & google.maps.MarkerOptions & google.maps.PolylineOptions;
 
@@ -89,6 +99,13 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     const [errMessage, setErrMessage] = useState('');
     const api = useAPIClient();
     const { modal } = App.useApp();
+    const height = useMapHeight();
+
+    useEffect(() => {
+      if (map.current) {
+        map.current.setZoom(zoom);
+      }
+    }, [zoom]);
 
     const type = useMemo<MapEditorType>(() => {
       if (props.type) return props.type;
@@ -392,7 +409,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       <div
         className={css`
           position: relative;
-          height: 500px;
+          height: ${height || 500}px !important;
         `}
       >
         {!map.current && (

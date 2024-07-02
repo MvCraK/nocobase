@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   Page,
   expect,
@@ -180,7 +189,7 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      supportedOptions: ['Edit button', 'Bind workflows', 'Delete'],
+      supportedOptions: ['Edit button', 'Delete'],
     });
   });
 
@@ -198,7 +207,6 @@ test.describe('actions schema settings', () => {
         'Assign field values',
         'Skip required validation',
         'After successful submission',
-        'Bind workflows',
         'Delete',
       ],
     });

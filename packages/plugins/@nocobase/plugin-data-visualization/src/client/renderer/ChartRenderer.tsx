@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
@@ -21,6 +30,7 @@ import { createRendererSchema, getField } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
 import { useChart } from '../chart/group';
 import { ChartDataContext } from '../block/ChartDataProvider';
+import { Schema } from '@formily/react';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC & {
@@ -50,6 +60,7 @@ export const ChartRenderer: React.FC & {
       return props;
     }, {}),
   });
+  const compiledProps = Schema.compile(chartProps);
   const C = chart?.Component;
 
   if (!chart) {
@@ -67,7 +78,7 @@ export const ChartRenderer: React.FC & {
         }}
         FallbackComponent={ErrorFallback}
       >
-        <C {...chartProps} />
+        <C {...compiledProps} />
       </ErrorBoundary>
     </Spin>
   );
@@ -102,7 +113,7 @@ ChartRenderer.Designer = function Designer() {
       >
         {t('Duplicate')}
       </SchemaSettingsItem>
-      <SchemaSettingsBlockTitleItem />
+      {/* <SchemaSettingsBlockTitleItem /> */}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         // removeParentsIfNoChildren

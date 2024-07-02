@@ -1,26 +1,33 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
-  RecordProvider,
-  CollectionProvider,
   FormBlockContext,
-  CollectionRecordProvider,
+  RecordProvider,
   fetchTemplateData,
+  useACLActionParamsContext,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
   useCollectionManager_deprecated,
+  useCollectionParentRecordData,
   useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
-  useCollectionParentRecordData,
   useRecord,
-  useCollectionRecord,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
@@ -74,10 +81,10 @@ export const DuplicateAction = observer(
     const { designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { service, __parent, block } = useBlockRequestContext();
+    const { service, __parent, block, resource } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
-    const parentRecordData = useCollectionParentRecordData();
+    const parentRecordData: any = useCollectionParentRecordData();
     const { id, __collection } = record;
     const ctx = useActionContext();
     const { name } = useCollection_deprecated();
@@ -85,6 +92,12 @@ export const DuplicateAction = observer(
     const { t } = useTranslation();
     const collectionFields = getCollectionFields(__collection || name);
     const formctx = useFormBlockContext();
+    const aclCtx = useACLActionParamsContext();
+    const buttonStyle = useMemo(() => {
+      return {
+        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+      };
+    }, [designable, field?.data?.hidden]);
     const template = {
       key: 'duplicate',
       dataId: id,
@@ -100,7 +113,7 @@ export const DuplicateAction = observer(
       setLoading(true);
       try {
         const data = await fetchTemplateData(api, template, t);
-        await api.resource(__collection || name).create({
+        await resource['create']({
           values: {
             ...data,
           },
@@ -118,7 +131,7 @@ export const DuplicateAction = observer(
       }
     };
     const handelDuplicate = () => {
-      if (!disabled && !loading) {
+      if (!disabled && !loading && aclCtx) {
         if (duplicateFields?.length > 0) {
           if (duplicateMode === 'quickDulicate') {
             handelQuickDuplicate();
@@ -166,6 +179,7 @@ export const DuplicateAction = observer(
                   opacity: designable && field?.data?.hidden && 0.1,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   position: 'relative',
+                  ...buttonStyle,
                 }}
                 onClick={handelDuplicate}
               >
@@ -186,10 +200,8 @@ export const DuplicateAction = observer(
               </Button>
             )}
             <CollectionProvider_deprecated name={duplicateCollection || name}>
-              <RecordProvider
-                record={{ ...record, __collection: duplicateCollection || __collection }}
-                parent={parentRecordData}
-              >
+              {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
+              <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
                 <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                   <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
                 </ActionContextProvider>

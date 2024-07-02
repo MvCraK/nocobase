@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
-import * as actions from './actions/users';
 import { Cache } from '@nocobase/cache';
+import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
 
 export default class PluginUsersServer extends Plugin {
@@ -70,6 +79,19 @@ export default class PluginUsersServer extends Plugin {
           target: 'users',
           foreignKey: 'createdById',
           targetKey: 'id',
+          uiSchema: {
+            type: 'object',
+            title: '{{t("Created by")}}',
+            'x-component': 'AssociationField',
+            'x-component-props': {
+              fieldNames: {
+                value: 'id',
+                label: 'nickname',
+              },
+            },
+            'x-read-pretty': true,
+          },
+          interface: 'createdBy',
         });
       }
       if (updatedBy === true) {
@@ -85,6 +107,19 @@ export default class PluginUsersServer extends Plugin {
           target: 'users',
           foreignKey: 'updatedById',
           targetKey: 'id',
+          uiSchema: {
+            type: 'object',
+            title: '{{t("Last updated by")}}',
+            'x-component': 'AssociationField',
+            'x-component-props': {
+              fieldNames: {
+                value: 'id',
+                label: 'nickname',
+              },
+            },
+            'x-read-pretty': true,
+          },
+          interface: 'updatedBy',
         });
       }
     });
@@ -113,8 +148,8 @@ export default class PluginUsersServer extends Plugin {
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.*`,
-      actions: ['users:listExcludeRole', 'users:list'],
+      name: `pm.${this.name}`,
+      actions: ['users:*'],
     });
   }
 
@@ -165,6 +200,7 @@ export default class PluginUsersServer extends Plugin {
   async install(options) {
     const { rootNickname, rootPassword, rootEmail, rootUsername } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
+
     if (await User.repository.findOne({ filter: { email: rootEmail } })) {
       return;
     }
@@ -179,6 +215,7 @@ export default class PluginUsersServer extends Plugin {
     });
 
     const repo = this.db.getRepository<any>('collections');
+
     if (repo) {
       await repo.db2cm('users');
     }

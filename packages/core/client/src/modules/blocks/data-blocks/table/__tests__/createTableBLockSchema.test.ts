@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createTableBlockUISchema } from '../createTableBlockUISchema';
 
 vi.mock('@formily/shared', () => {
@@ -43,8 +52,12 @@ describe('createTableBLockSchemaV2', () => {
                 "x-action-column": "actions",
                 "x-component": "TableV2.Column",
                 "x-decorator": "TableV2.Column.ActionBar",
-                "x-designer": "TableV2.ActionColumnDesigner",
                 "x-initializer": "table:configureItemActions",
+                "x-settings": "fieldSettings:TableColumn",
+                "x-toolbar": "TableColumnSchemaToolbar",
+                "x-toolbar-props": {
+                  "initializer": "table:configureItemActions",
+                },
               },
             },
             "type": "array",
@@ -60,7 +73,7 @@ describe('createTableBLockSchemaV2', () => {
           },
         },
         "type": "void",
-        "x-acl-action": "users:list",
+        "x-acl-action": "users.roles:list",
         "x-component": "CardItem",
         "x-decorator": "TableBlockProvider",
         "x-decorator-props": {

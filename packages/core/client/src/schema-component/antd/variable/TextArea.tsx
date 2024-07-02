@@ -1,12 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Input, Space } from 'antd';
-import { cloneDeep } from 'lodash';
+import { Space } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
+import useInputStyle from 'antd/es/input/style';
 
 import { error } from '@nocobase/utils/client';
 
+import { isReactElement } from '@formily/shared';
 import { EllipsisWithTooltip } from '../..';
 import { VariableSelect } from './VariableSelect';
 import { useStyles } from './style';
@@ -114,7 +125,17 @@ function createOptionsValueLabelMap(options: any[]) {
 }
 
 function createVariableTagHTML(variable, keyLabelMap) {
-  const labels = keyLabelMap.get(variable);
+  let labels = keyLabelMap.get(variable);
+
+  if (labels) {
+    labels = labels.map((label) => {
+      if (isReactElement(label)) {
+        return renderToString(label);
+      }
+      return label;
+    });
+  }
+
   return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${
     labels ? labels.join(' / ') : '...'
   }</span>`;
@@ -189,7 +210,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
+  const { value = '', scope, onChange, multiline = true, changeOnSelect, style } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
@@ -199,13 +220,14 @@ export function TextArea(props) {
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
+  useInputStyle('ant-input');
 
   useEffect(() => {
     preloadOptions(scope, value)
       .then((preloaded) => {
         setOptions(preloaded);
       })
-      .catch((err) => console.error);
+      .catch(console.error);
   }, [scope, value]);
 
   useEffect(() => {
@@ -358,24 +380,22 @@ export function TextArea(props) {
   );
 
   const disabled = props.disabled || form.disabled;
-
   return wrapSSR(
     <Space.Compact
       className={cx(
         componentCls,
         hashId,
         css`
-          &.ant-input-group.ant-input-group-compact {
-            display: flex;
-            .ant-input {
-              flex-grow: 1;
-              min-width: 200px;
-            }
-            .ant-input-disabled {
-              .ant-tag {
-                color: #bfbfbf;
-                border-color: #d9d9d9;
-              }
+          display: flex;
+          .ant-input {
+            flex-grow: 1;
+            min-width: 200px;
+            word-break: break-all;
+          }
+          .ant-input-disabled {
+            .ant-tag {
+              color: #bfbfbf;
+              border-color: #d9d9d9;
             }
           }
 
@@ -394,6 +414,8 @@ export function TextArea(props) {
         onPaste={onPaste}
         onCompositionStart={onCompositionStart}
         onCompositionEnd={onCompositionEnd}
+        placeholder={props.placeholder}
+        style={style}
         className={cx(
           hashId,
           'ant-input',
@@ -401,6 +423,11 @@ export function TextArea(props) {
           css`
             overflow: auto;
             white-space: ${multiline ? 'normal' : 'nowrap'};
+
+            &[placeholder]:empty::before {
+              content: attr(placeholder);
+              color: #ccc;
+            }
 
             .ant-tag {
               display: inline;
@@ -416,20 +443,18 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? (
-        <VariableSelect
-          className=""
-          options={options}
-          setOptions={setOptions}
-          onInsert={onInsert}
-          changeOnSelect={changeOnSelect}
-        />
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
       ) : null}
     </Space.Compact>,
   );
 }
 
-async function preloadOptions(scope, value) {
-  const options = cloneDeep(scope ?? []);
+async function preloadOptions(scope, value: string) {
+  let options = [...(scope ?? [])];
+
+  options = options.filter((item) => {
+    return !item.deprecated || value?.includes(item.value);
+  });
 
   // 重置正则的匹配位置
   VARIABLE_RE.lastIndex = 0;
@@ -446,7 +471,7 @@ async function preloadOptions(scope, value) {
           prevOption = options.find((item) => item.value === key);
         } else {
           if (prevOption.loadChildren && !prevOption.children?.length) {
-            await prevOption.loadChildren(prevOption);
+            await prevOption.loadChildren(prevOption, key, keys);
           }
           prevOption = prevOption.children.find((item) => item.value === key);
         }
@@ -461,6 +486,7 @@ async function preloadOptions(scope, value) {
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   const { value } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+  const { wrapSSR, hashId, componentCls } = useStyles();
 
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
@@ -474,21 +500,25 @@ TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   }, [scope, value]);
   const html = renderHTML(value ?? '', keyLabelMap);
 
-  const content = (
+  const content = wrapSSR(
     <span
       dangerouslySetInnerHTML={{ __html: html }}
-      className={css`
-        overflow: auto;
+      className={cx(
+        componentCls,
+        hashId,
+        css`
+          overflow: auto;
 
-        .ant-tag {
-          display: inline;
-          line-height: 19px;
-          margin: 0 0.25em;
-          padding: 2px 7px;
-          border-radius: 10px;
-        }
-      `}
-    />
+          .ant-tag {
+            display: inline;
+            line-height: 19px;
+            margin: 0 0.25em;
+            padding: 2px 7px;
+            border-radius: 10px;
+          }
+        `,
+      )}
+    />,
   );
 
   return (

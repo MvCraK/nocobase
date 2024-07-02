@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { GeneralField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
@@ -5,7 +14,8 @@ import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { Collection } from '../../../data-source';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
@@ -16,7 +26,6 @@ import { getVariableName } from '../../../variables/utils/getVariableName';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldContext } from './context';
-import { Collection } from '../../../data-source';
 
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
@@ -71,34 +80,40 @@ export default function useServiceOptions(props) {
 
     _run();
 
-    const dispose = reaction(() => {
-      // 这一步主要是为了使 reaction 能够收集到依赖
-      const flat = flatten(filterFromSchema, {
-        breakOn({ key }) {
-          return key.startsWith('$') && key !== '$and' && key !== '$or';
-        },
-        transformValue(value) {
-          if (!isVariable(value)) {
-            return value;
-          }
-          const variableName = getVariableName(value);
-          const variable = findVariable(variableName);
+    const dispose = reaction(
+      () => {
+        // 这一步主要是为了使 reaction 能够收集到依赖
+        const flat = flatten(filterFromSchema, {
+          breakOn({ key }) {
+            return key.startsWith('$') && key !== '$and' && key !== '$or';
+          },
+          transformValue(value) {
+            if (!isVariable(value)) {
+              return value;
+            }
+            const variableName = getVariableName(value);
+            const variable = findVariable(variableName);
 
-          if (process.env.NODE_ENV !== 'production' && !variable) {
-            throw new Error(`useServiceOptions: can not find variable ${variableName}`);
-          }
+            if (process.env.NODE_ENV !== 'production' && !variable) {
+              throw new Error(`useServiceOptions: can not find variable ${variableName}`);
+            }
 
-          const result = getValuesByPath(
-            {
-              [variableName]: variable?.ctx || {},
-            },
-            getPath(value),
-          );
-          return result;
-        },
-      });
-      return flat;
-    }, run);
+            const result = getValuesByPath(
+              {
+                [variableName]: variable?.ctx || {},
+              },
+              getPath(value),
+            );
+            return result;
+          },
+        });
+        return flat;
+      },
+      run,
+      {
+        equals: _.isEqual,
+      },
+    );
 
     return dispose;
   }, [

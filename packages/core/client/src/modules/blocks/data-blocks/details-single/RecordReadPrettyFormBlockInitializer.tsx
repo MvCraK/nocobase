@@ -1,11 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { useBlockAssociationContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
-import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
+import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { createDetailsUISchema } from './createDetailsUISchema';
+import { useAssociationName } from '../../../../data-source';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -27,7 +36,7 @@ export const RecordReadPrettyFormBlockInitializer = () => {
 export function useCreateSingleDetailsSchema() {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
 
   const templateWrap = useCallback(
     (templateSchema, options) => {
@@ -39,6 +48,7 @@ export function useCreateSingleDetailsSchema() {
                 association,
                 dataSource: item.dataSource,
                 templateSchema: templateSchema,
+                isCurrent: true,
               }
             : {
                 collectionName: item.collectionName || item.name,

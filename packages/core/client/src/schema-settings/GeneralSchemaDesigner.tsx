@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DragOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
@@ -5,7 +14,8 @@ import { Space } from 'antd';
 import classNames from 'classnames';
 import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
+import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
+import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSource } from '../data-source/data-source/DataSourceProvider';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
@@ -63,6 +73,7 @@ export interface GeneralSchemaDesignerProps {
  * @deprecated use `SchemaToolbar` instead
  */
 export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
+  const fieldSchema = useFieldSchema();
   const {
     disableInitializer,
     title,
@@ -71,11 +82,10 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
     contextValue,
     draggable = true,
     showDataSource = true,
-  } = props;
+  } = { ...props, ...(fieldSchema['x-toolbar-props'] || {}) } as GeneralSchemaDesignerProps;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const schemaSettingsProps = {
@@ -172,8 +182,8 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
 export interface SchemaToolbarProps {
   title?: string | string[];
   draggable?: boolean;
-  initializer?: string | false;
-  settings?: string | false;
+  initializer?: string | SchemaInitializer<any> | false;
+  settings?: string | SchemaSettings<any> | false;
   /**
    * @default true
    */
@@ -182,11 +192,22 @@ export interface SchemaToolbarProps {
 }
 
 const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
-  const { title, initializer, settings, showBackground, showBorder = true, draggable = true } = props;
-  const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
+  const {
+    title,
+    initializer,
+    settings,
+    showBackground,
+    showBorder = true,
+    draggable = true,
+  } = {
+    ...props,
+    ...(fieldSchema['x-toolbar-props'] || {}),
+  } as SchemaToolbarProps;
+  const { designable } = useDesignable();
   const compile = useCompile();
   const { styles } = useStyles();
+  const { t } = useTranslation();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const dm = useDataSourceManager();
   const dataSources = dm?.getDataSources();
@@ -199,20 +220,19 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     if (Array.isArray(title)) return title.map((item) => compile(item));
   }, [compile, title]);
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
-    fieldSchema['x-settings'] || settings,
+    settings || fieldSchema['x-settings'],
     fieldSchema['x-settings-props'],
   );
   const { render: schemaInitializerRender, exists: schemaInitializerExists } = useSchemaInitializerRender(
-    fieldSchema['x-initializer'] || initializer,
+    initializer || fieldSchema['x-initializer'],
     fieldSchema['x-initializer-props'],
   );
   const rowCtx = useGridRowContext();
   const gridContext = useGridContext();
-
   const initializerProps: any = useMemo(() => {
     return {
       insertPosition: 'afterEnd',
-      wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
+      wrap: rowCtx?.cols?.length === 1 ? gridRowColWrap : undefined,
       Component: (props: any) => (
         <PlusOutlined
           {...props}
@@ -235,6 +255,9 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
   const initializerElement = useMemo(() => {
     if (initializer === false) return null;
+    if (schemaInitializerExists) {
+      return schemaInitializerRender(initializerProps);
+    }
     if (gridContext?.InitializerComponent || gridContext?.renderSchemaInitializer) {
       return gridContext?.InitializerComponent ? (
         <gridContext.InitializerComponent {...initializerProps} />
@@ -242,8 +265,6 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
         gridContext.renderSchemaInitializer?.(initializerProps)
       );
     }
-    if (!schemaInitializerExists) return null;
-    return schemaInitializerRender(initializerProps);
   }, [gridContext, initializer, initializerProps, schemaInitializerExists, schemaInitializerRender]);
 
   const settingsElement = useMemo(() => {
@@ -254,7 +275,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
-    const parentElement = toolbarElement?.parentElement;
+    let parentElement = toolbarElement?.parentElement;
+    while (parentElement && window.getComputedStyle(parentElement).height === '0px') {
+      parentElement = parentElement.parentElement;
+    }
+    if (!parentElement) {
+      return;
+    }
+
     function show() {
       if (toolbarElement) {
         toolbarElement.style.display = 'block';
@@ -267,21 +295,17 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       }
     }
 
-    if (parentElement) {
-      const style = window.getComputedStyle(parentElement);
-      if (style.position === 'static') {
-        parentElement.style.position = 'relative';
-      }
-
-      parentElement.addEventListener('mouseenter', show);
-      parentElement.addEventListener('mouseleave', hide);
+    const style = window.getComputedStyle(parentElement);
+    if (style.position === 'static') {
+      parentElement.style.position = 'relative';
     }
 
+    parentElement.addEventListener('mouseenter', show);
+    parentElement.addEventListener('mouseleave', hide);
+
     return () => {
-      if (parentElement) {
-        parentElement.removeEventListener('mouseenter', show);
-        parentElement.removeEventListener('mouseleave', hide);
-      }
+      parentElement.removeEventListener('mouseenter', show);
+      parentElement.removeEventListener('mouseleave', hide);
     };
   }, []);
 
@@ -298,11 +322,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       {titleArr && (
         <div className={styles.toolbarTitle}>
           <Space size={2}>
-            {titleArr.map((item) => (
-              <span key={item} className={styles.toolbarTitleTag}>
-                {dataSource ? `${compile(dataSource?.displayName)} > ${item}` : item}
+            <span key={titleArr[0]} className={styles.toolbarTitleTag}>
+              {dataSource ? `${compile(dataSource?.displayName)} > ${titleArr[0]}` : titleArr[0]}
+            </span>
+            {titleArr[1] && (
+              <span className={styles.toolbarTitleTag}>
+                {`${t('Reference template')}: ${`${titleArr[1]}` || t('Untitled')}`}
               </span>
-            ))}
+            )}
           </Space>
         </div>
       )}

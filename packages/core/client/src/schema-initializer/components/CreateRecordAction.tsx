@@ -1,11 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DownOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState, forwardRef, createRef } from 'react';
 import { composeRef } from 'rc-util/lib/ref';
 import { useDesignable } from '../../';
-import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
+import { useACLRolesCheck, useRecordPkValue, useACLActionParamsContext } from '../../acl/ACLProvider';
 import {
   CollectionProvider_deprecated,
   useCollection_deprecated,
@@ -16,46 +24,6 @@ import { ActionContextProvider, useActionContext, useCompile } from '../../schem
 import { linkageAction } from '../../schema-component/antd/action/utils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
-
-export const actionDesignerCss = css`
-  position: relative;
-  &:hover {
-    .general-schema-designer {
-      display: block;
-    }
-  }
-  .general-schema-designer {
-    position: absolute;
-    z-index: 999;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: none;
-    background: var(--colorBgSettingsHover);
-    border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    pointer-events: none;
-    > .general-schema-designer-icons {
-      position: absolute;
-      right: 2px;
-      top: 2px;
-      line-height: 16px;
-      pointer-events: all;
-      .ant-space-item {
-        background-color: var(--colorSettings);
-        color: #fff;
-        line-height: 16px;
-        width: 16px;
-        padding-left: 1px;
-        align-self: stretch;
-      }
-    }
-  }
-`;
 
 export function useAclCheck(actionPath) {
   const aclCheck = useAclCheckFn();
@@ -129,16 +97,20 @@ const InternalCreateRecordAction = (props: any, ref) => {
   const buttonRef = composeRef(ref, internalRef);
   return (
     //@ts-ignore
-    <div className={actionDesignerCss} ref={buttonRef as React.Ref<HTMLButtonElement>}>
-      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
-        <CreateAction
-          {...props}
-          onClick={(collectionData) => {
+    <div ref={buttonRef as React.Ref<HTMLButtonElement>}>
+      <CreateAction
+        {...props}
+        onClick={(collectionData) => {
+          if (collectionData.name === collection.name) {
+            ctx?.setVisible(true);
+          } else {
             setVisible(true);
-            setCurrentCollection(collectionData.name);
-            setCurrentCollectionDataSource(collectionData.dataSource);
-          }}
-        />
+          }
+          setCurrentCollection(collectionData.name);
+          setCurrentCollectionDataSource(collectionData.dataSource);
+        }}
+      />
+      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
         <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
           <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
         </CollectionProvider_deprecated>
@@ -233,7 +205,7 @@ export const CreateAction = observer(
         });
     }, [field, linkageRules, localVariables, variables]);
     return (
-      <div className={actionDesignerCss}>
+      <div>
         <FinallyButton
           {...{
             inheritsCollections,
@@ -284,6 +256,12 @@ function FinallyButton({
   designable: boolean;
 }) {
   const { getCollection } = useCollectionManager_deprecated();
+  const aclCtx = useACLActionParamsContext();
+  const buttonStyle = useMemo(() => {
+    return {
+      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+    };
+  }, [designable, field?.data?.hidden]);
 
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
@@ -293,6 +271,7 @@ function FinallyButton({
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
+          style={{ ...props?.style, ...buttonStyle }}
           buttonsRender={([leftButton, rightButton]) => [
             React.cloneElement(leftButton as React.ReactElement<any, string>, {
               style: props?.style,
@@ -318,7 +297,7 @@ function FinallyButton({
               icon={icon}
               type={componentType}
               danger={props.danger}
-              style={props?.style}
+              style={{ ...props?.style, ...buttonStyle }}
             >
               {props.children} <DownOutlined />
             </Button>
@@ -344,6 +323,7 @@ function FinallyButton({
         style={{
           display: !designable && field?.data?.hidden && 'none',
           opacity: designable && field?.data?.hidden && 0.1,
+          ...buttonStyle,
         }}
       >
         {props.children}
@@ -365,6 +345,7 @@ function FinallyButton({
         ...props?.style,
         display: !designable && field?.data?.hidden && 'none',
         opacity: designable && field?.data?.hidden && 0.1,
+        ...buttonStyle,
       }}
     >
       {props.children}

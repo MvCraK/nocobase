@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
 import { generalWithDatetimeFields, oneEmptyGantt } from './utils';
 
@@ -40,7 +49,7 @@ test.describe('configure fields', () => {
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'Single line text2' }).getByRole('switch')).not.toBeChecked();
   });
-  test('add assciation field should appends association', async ({ page, mockPage, mockRecord }) => {
+  test('add association field should appends association', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', { singleLineText: 'singleLineText', manyToOne: { id: 1 } });
     await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
@@ -76,20 +85,22 @@ test.describe('configure actions', () => {
   test('configure button in gannt block', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGantt).goto();
     await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
-    await page.getByRole('menuitem', { name: 'Customize right' }).hover();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
-    await page.getByRole('menuitem', { name: 'Add record' }).click();
     await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Refresh-refresh-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Bulk edit-customize:bulkEdit-general-table')).toBeVisible();
-    await expect(page.getByLabel('action-Action-Add record-customize:create-general-table')).toBeVisible();
   });
 });

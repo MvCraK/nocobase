@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { Application } from '../../application/Application';
 import type { CollectionOptions } from './Collection';
 
@@ -8,7 +17,7 @@ export const collectionTransform = (collection: CollectionOptions, app: Applicat
   const { rawTitle, title, fields = [], ...rest } = collection;
   return {
     ...rest,
-    title: rawTitle ? title : app.i18n.t(title),
+    title: rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' }),
     rawTitle: rawTitle || title,
     fields: fields?.map(({ uiSchema, ...field }) => {
       if (uiSchema?.title) {

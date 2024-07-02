@@ -1,3 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore file -- @preserve */
+
 import { fsExists } from '@nocobase/utils';
 import fs from 'fs';
 import { resolve } from 'path';
@@ -16,7 +27,11 @@ export default (app: Application) => {
       const upgrading = await fsExists(file);
       if (upgrading) {
         await app.upgrade();
-        await fs.promises.rm(file);
+        try {
+          await fs.promises.rm(file);
+        } catch (error) {
+          // skip
+        }
       } else if (options.quickstart) {
         if (await app.isInstalled()) {
           await app.upgrade();

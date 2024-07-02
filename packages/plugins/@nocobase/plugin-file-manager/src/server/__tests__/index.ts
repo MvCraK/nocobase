@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { MockServer, createMockServer } from '@nocobase/test';
 import send from 'koa-send';
 import path from 'path';
@@ -9,8 +18,7 @@ export async function getApp(options = {}): Promise<MockServer> {
     cors: {
       origin: '*',
     },
-    plugins: ['file-manager'],
-    acl: false,
+    plugins: ['users', 'auth', 'file-manager'],
   });
 
   app.use(async (ctx, next) => {

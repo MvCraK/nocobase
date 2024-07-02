@@ -1,6 +1,15 @@
-import { expectSettingsMenu, test, expect } from '@nocobase/test/e2e';
-import { createTable } from './utils';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { expect, expectSettingsMenu, test } from '@nocobase/test/e2e';
 import { tableSelectorDataScopeVariable } from './templatesOfBug';
+import { createTable } from './utils';
 
 test.describe('table data selector schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -117,7 +126,10 @@ test.describe('table data selector schema settings', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // Table 中显示 singleLineText 字段
-    await page.getByLabel('schema-initializer-TableV2.').hover();
+    await page
+      .getByTestId('drawer-AssociationField.Selector-table-selector-data-scope-variable-Select record')
+      .getByLabel('schema-initializer-TableV2.')
+      .hover();
     await page.getByRole('menuitem', { name: 'singleLineText' }).click();
     await page.mouse.move(300, 0);
 

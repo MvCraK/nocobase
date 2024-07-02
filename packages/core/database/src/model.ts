@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import lodash, { isPlainObject } from 'lodash';
 import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
@@ -82,6 +91,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
           return data;
         },
         this.hiddenObjKey,
+        this.handleBigInt,
       ];
       return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), obj);
     };
@@ -137,6 +147,24 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       .map((field) => field.options.name);
 
     return lodash.omit(obj, hiddenFields);
+  }
+
+  private handleBigInt(obj, options) {
+    if (!options.db.inDialect('mariadb')) {
+      return obj;
+    }
+
+    const bigIntKeys = Object.keys(options.model.rawAttributes).filter((key) => {
+      return options.model.rawAttributes[key].type.constructor.name === 'BIGINT';
+    });
+
+    for (const key of bigIntKeys) {
+      if (obj[key] !== null && obj[key] !== undefined && typeof obj[key] !== 'string' && typeof obj[key] !== 'number') {
+        obj[key] = obj[key].toString();
+      }
+    }
+
+    return obj;
   }
 
   private sortAssociations(data, { field }: JSONTransformerOptions): any {

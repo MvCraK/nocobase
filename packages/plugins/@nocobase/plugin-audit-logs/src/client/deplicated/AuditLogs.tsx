@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayTable } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import {
@@ -170,8 +179,12 @@ export const AuditLogs: any = () => {
                 'x-action-column': 'actions',
                 'x-decorator': 'TableV2.Column.ActionBar',
                 'x-component': 'TableV2.Column',
-                'x-designer': 'TableV2.ActionColumnDesigner',
+                'x-toolbar': 'TableColumnSchemaToolbar',
                 'x-initializer': 'table:configureItemActions',
+                'x-settings': 'fieldSettings:TableColumn',
+                'x-toolbar-props': {
+                  initializer: 'table:configureItemActions',
+                },
                 properties: {
                   actions: {
                     type: 'void',

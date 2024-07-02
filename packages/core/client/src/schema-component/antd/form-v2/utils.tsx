@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { evaluators } from '@nocobase/evaluators/client';
 import { uid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
-import { REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
+import { REGEX_OF_VARIABLE_IN_EXPRESSION } from '../../../variables/utils/isVariable';
 import { conditionAnalyses } from '../../common/utils/uitls';
 
 interface Props {
@@ -106,7 +115,7 @@ export const collectFieldStateOfLinkageRules = ({
               console.error(error);
             }
           } else if (value?.mode === 'constant') {
-            return value?.value || value;
+            return value?.value ?? value;
           } else {
             return null;
           }
@@ -129,7 +138,7 @@ export const collectFieldStateOfLinkageRules = ({
   }
 };
 
-async function replaceVariables(
+export async function replaceVariables(
   value: string,
   {
     variables,
@@ -146,7 +155,7 @@ async function replaceVariables(
     return;
   }
 
-  const waitForParsing = value.match(REGEX_OF_VARIABLE)?.map(async (item) => {
+  const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {
     const result = await variables.parseVariable(item, localVariables);
 
     // 在开头加 `_` 是为了保证 id 不能以数字开头，否则在解析表达式的时候（不是解析变量）会报错
@@ -160,9 +169,8 @@ async function replaceVariables(
   if (waitForParsing) {
     await Promise.all(waitForParsing);
   }
-
   return {
-    exp: value.replace(REGEX_OF_VARIABLE, (match) => {
+    exp: value.replace(REGEX_OF_VARIABLE_IN_EXPRESSION, (match) => {
       return `{{${store[match] || match}}}`;
     }),
     scope,

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Button, ButtonProps } from 'antd';
 import React, { FC } from 'react';
 import { Icon } from '../../../icon';
@@ -13,7 +22,6 @@ export const SchemaInitializerButton: FC<SchemaInitializerButtonProps> = React.m
   const { style, options, ...others } = props;
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
-
   return (
     <Button
       data-testid={options['data-testid']}

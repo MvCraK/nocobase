@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
-import Plugin from '..';
+import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
 
 describe('workflow > Plugin', () => {
@@ -10,7 +19,7 @@ describe('workflow > Plugin', () => {
   let db: Database;
   let PostRepo;
   let WorkflowModel;
-  let plugin;
+  let plugin: Plugin;
 
   beforeEach(async () => {
     app = await getApp();
@@ -463,6 +472,44 @@ describe('workflow > Plugin', () => {
     });
   });
 
+  describe('deffered', () => {
+    it('deffered will not be process immediately, and can be start', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      plugin.trigger(w1, {}, { deferred: true });
+
+      await sleep(500);
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
+
+      plugin.start(e1s[0]);
+
+      await sleep(500);
+
+      const e2s = await w1.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('sync workflow will ignore the deferred option, and start it immediately', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'syncTrigger',
+      });
+
+      const processor = await plugin.trigger(w1, {}, { deferred: true });
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
   describe('sync', () => {
     it('sync on trigger class', async () => {
       const w1 = await WorkflowModel.create({
@@ -470,7 +517,7 @@ describe('workflow > Plugin', () => {
         type: 'syncTrigger',
       });
 
-      const processor = await plugin.trigger(w1, {});
+      const processor = (await plugin.trigger(w1, {})) as Processor;
 
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(1);
@@ -486,7 +533,7 @@ describe('workflow > Plugin', () => {
         sync: true,
       });
 
-      const processor = await plugin.trigger(w1, {});
+      const processor = (await plugin.trigger(w1, {})) as Processor;
 
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(1);

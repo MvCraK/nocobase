@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { useBlockAssociationContext } from '../../../../block-provider';
+import { useAssociationName } from '../../../../data-source';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
@@ -39,7 +48,7 @@ export const RecordFormBlockInitializer = () => {
 
 export function useCreateEditFormBlock() {
   const { insert } = useSchemaInitializer();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
 
   const createEditFormBlock = useCallback(
     ({ item }) => {
@@ -70,6 +79,7 @@ export function useCreateEditFormBlock() {
                 association,
                 dataSource: item.dataSource,
                 templateSchema: templateSchema,
+                isCurrent: true,
               }
             : {
                 collectionName: item.collectionName || item.name,

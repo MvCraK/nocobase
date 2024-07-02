@@ -1,8 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   RecordProvider,
+  VariablePopupRecordProvider,
+  getLabelFormatValue,
+  useCollection,
   useCollectionParentRecordData,
   useProps,
   withDynamicSchemaProps,
@@ -18,6 +30,7 @@ import { i18nt, useTranslation } from '../../locale';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
+import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
@@ -50,6 +63,8 @@ function Toolbar(props: ToolbarProps) {
 
 const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof Weeks)[number]) => {
   const { t } = useTranslation();
+  const { fields } = useCollection();
+  const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
   return useMemo(() => {
     if (!Array.isArray(dataSource)) return [];
     const events = [];
@@ -93,10 +108,10 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
         });
 
         if (res) return out;
-
+        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true);
         const event = {
           id: get(item, fieldNames.id || 'id'),
-          title: get(item, fieldNames.title) || t('Untitle'),
+          title: title || t('Untitle'),
           start: eventStart.toDate(),
           end: eventStart.add(intervalTime, 'millisecond').toDate(),
         };
@@ -105,7 +120,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       };
 
       if (cron === 'every_week') {
-        const nextStart = start
+        let nextStart = start
           .clone()
           .year(startDate.year())
           .month(startDate.month())
@@ -115,7 +130,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
           if (push(nextStart.clone())) {
             break;
           }
-          nextStart.add(1, 'week');
+          nextStart = nextStart.add(1, 'week');
         }
       } else if (cron === 'every_month') {
         push(start.clone().year(dateM.year()).month(dateM.month()));
@@ -142,11 +157,13 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       }
     });
     return events;
-  }, [dataSource, fieldNames, date, view]);
+  }, [dataSource, fieldNames.start, fieldNames.end, fieldNames.id, fieldNames.title, date, view, t]);
 };
 
 const CalendarRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
+  const { t } = useTranslation();
+  const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = useMemo(
@@ -169,7 +186,9 @@ const CalendarRecordViewer = (props) => {
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record} parent={parentRecordData}>
-            <RecursionField schema={eventSchema} name={eventSchema.name} />
+            <VariablePopupRecordProvider recordData={record} collection={collection}>
+              <RecursionField schema={eventSchema} name={eventSchema.name} />
+            </VariablePopupRecordProvider>
           </RecordProvider>
         </ActionContextProvider>
       </DeleteEventContext.Provider>
@@ -181,8 +200,8 @@ export const Calendar: any = withDynamicSchemaProps(
   observer(
     (props: any) => {
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
-
+      const { dataSource, fieldNames, showLunar } = useProps(props);
+      const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>('month');
       const events = useEvents(dataSource, fieldNames, date, view);
@@ -227,7 +246,7 @@ export const Calendar: any = withDynamicSchemaProps(
         showMore: (count) => i18nt('{{count}} more items', { count }),
       };
       return wrapSSR(
-        <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
+        <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <GlobalStyle />
           <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
           <BigCalendar

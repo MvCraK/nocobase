@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
@@ -6,6 +15,7 @@ import {
   createLogger,
   createSystemLogger,
   getLoggerFilePath,
+  Logger,
   LoggerOptions,
   RequestLoggerOptions,
   SystemLogger,
@@ -44,18 +54,28 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-
 import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
 import validateFilterParams from './middlewares/validate-filter-params';
+import path from 'path';
+import { parseVariables } from './middlewares';
+import { dataTemplate } from './middlewares/data-template';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
 
-export interface ResourcerOptions {
+export interface ResourceManagerOptions {
   prefix?: string;
 }
+
+/**
+ * this interface is deprecated and should not be used.
+ * @deprecated
+ * use {@link ResourceManagerOptions} instead
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ResourcerOptions extends ResourceManagerOptions {}
 
 export interface AppLoggerOptions {
   request: RequestLoggerOptions;
@@ -69,7 +89,13 @@ export interface AppTelemetryOptions extends TelemetryOptions {
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
   cacheManager?: CacheManagerOptions;
-  resourcer?: ResourcerOptions;
+  /**
+   * this property is deprecated and should not be used.
+   * @deprecated
+   * use {@link ApplicationOptions.resourceManager} instead
+   */
+  resourcer?: ResourceManagerOptions;
+  resourceManager?: ResourceManagerOptions;
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
@@ -78,9 +104,15 @@ export interface ApplicationOptions {
   plugins?: PluginConfiguration[];
   acl?: boolean;
   logger?: AppLoggerOptions;
+  /**
+   * @internal
+   */
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  /**
+   * @internal
+   */
   perfHooks?: boolean;
   telemetry?: AppTelemetryOptions;
 }
@@ -118,6 +150,14 @@ interface ListenOptions {
    */
   ipv6Only?: boolean | undefined;
   signal?: AbortSignal | undefined;
+}
+
+interface LoadOptions {
+  reload?: boolean;
+  hooks?: boolean;
+  sync?: boolean;
+
+  [key: string]: any;
 }
 
 interface StartOptions {
@@ -174,12 +214,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
-  protected _logger: SystemLogger;
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+
+  /**
+   * @internal
+   */
+  public requestLogger: Logger;
+  private sqlLogger: Logger;
+  protected _logger: SystemLogger;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -188,6 +234,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.init();
 
     this._appSupervisor.addApp(this);
+  }
+
+  get logger() {
+    return this._logger;
+  }
+
+  get log() {
+    return this._logger;
   }
 
   protected _loaded: boolean;
@@ -225,10 +279,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // @ts-ignore
     return this.mainDataSource.collectionManager.db;
-  }
-
-  get logger() {
-    return this._logger;
   }
 
   get resourceManager() {
@@ -316,10 +366,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get version() {
     return this._version;
-  }
-
-  get log() {
-    return this._logger;
   }
 
   get name() {
@@ -464,6 +510,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.telemetry.shutdown();
     }
 
+    this.closeLogger();
+
     const oldDb = this.db;
 
     this.init();
@@ -474,7 +522,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._loaded = false;
   }
 
-  async load(options?: any) {
+  async load(options?: LoadOptions) {
     if (this._loaded) {
       return;
     }
@@ -502,9 +550,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
+    this.log.debug('init plugins');
     this.setMaintainingMessage('init plugins');
     await this.pm.initPlugins();
 
+    this.log.debug('loading app...');
     this.setMaintainingMessage('start load');
     this.setMaintainingMessage('emit beforeLoad');
 
@@ -533,7 +583,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._loaded = true;
   }
 
-  async reload(options?: any) {
+  async reload(options?: LoadOptions) {
     this.log.debug(`start reload`, { method: 'reload' });
 
     this._loaded = false;
@@ -560,15 +610,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.pm.get(name) as P;
   }
 
-  /**
-   * This method is deprecated and should not be used.
-   * Use {@link this.runAsCLI()} instead.
-   * @deprecated
-   */
-  async parse(argv = process.argv) {
-    return this.runAsCLI(argv);
-  }
-
   async authenticate() {
     if (this._authenticated) {
       return;
@@ -585,46 +626,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async runCommandThrowError(command: string, ...args: any[]) {
     return await this.runAsCLI([command, ...args], { from: 'user', throwError: true });
-  }
-
-  protected createCLI() {
-    const command = new AppCommand('nocobase')
-      .usage('[command] [options]')
-      .hook('preAction', async (_, actionCommand) => {
-        this._actionCommand = actionCommand;
-        this.activatedCommand = {
-          name: getCommandFullName(actionCommand),
-        };
-
-        this.setMaintaining({
-          status: 'command_begin',
-          command: this.activatedCommand,
-        });
-
-        this.setMaintaining({
-          status: 'command_running',
-          command: this.activatedCommand,
-        });
-
-        if (actionCommand['_authenticate']) {
-          await this.authenticate();
-        }
-
-        if (actionCommand['_preload']) {
-          await this.load();
-        }
-      })
-      .hook('postAction', async (_, actionCommand) => {
-        if (this._maintainingStatusBeforeCommand?.error && this._started) {
-          await this.restart();
-        }
-      });
-
-    command.exitOverride((err) => {
-      throw err;
-    });
-
-    return command;
   }
 
   /**
@@ -692,21 +693,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  async loadPluginCommands() {
-    this.log.debug('load plugin commands');
-    await this.pm.loadCommands();
-  }
-
-  /**
-   * @internal
-   */
   async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean; reqId?: string }) {
     if (this.activatedCommand) {
       return;
     }
-    if (options.reqId) {
+    if (options?.reqId) {
       this.context.reqId = options.reqId;
-      this._logger = this._logger.child({ reqId: this.context.reqId });
+      this._logger = this._logger.child({ reqId: this.context.reqId }) as any;
     }
     this._maintainingStatusBeforeCommand = this._maintainingCommandStatus;
 
@@ -738,6 +731,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       if (options?.throwError) {
         throw error;
+      } else {
+        this.log.error(error);
       }
     } finally {
       const _actionCommand = this._actionCommand;
@@ -768,6 +763,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       );
     }
 
+    this.log.debug(`starting app...`);
     this.setMaintainingMessage('starting app...');
 
     if (this.db.closed()) {
@@ -879,6 +875,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
 
     this.log.debug('finish destroy app', { method: 'destory' });
+
+    this.closeLogger();
   }
 
   async isInstalled() {
@@ -1016,23 +1014,84 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const { dirname } = options;
     return createLogger({
       ...options,
-      dirname: getLoggerFilePath(this.name || 'main', dirname || ''),
+      dirname: getLoggerFilePath(path.join(this.name || 'main', dirname || '')),
     });
+  }
+
+  protected createCLI() {
+    const command = new AppCommand('nocobase')
+      .usage('[command] [options]')
+      .hook('preAction', async (_, actionCommand) => {
+        this._actionCommand = actionCommand;
+        this.activatedCommand = {
+          name: getCommandFullName(actionCommand),
+        };
+
+        this.setMaintaining({
+          status: 'command_begin',
+          command: this.activatedCommand,
+        });
+
+        this.setMaintaining({
+          status: 'command_running',
+          command: this.activatedCommand,
+        });
+
+        if (actionCommand['_authenticate']) {
+          await this.authenticate();
+        }
+
+        if (actionCommand['_preload']) {
+          await this.load();
+        }
+      })
+      .hook('postAction', async (_, actionCommand) => {
+        if (this._maintainingStatusBeforeCommand?.error && this._started) {
+          await this.restart();
+        }
+      });
+
+    command.exitOverride((err) => {
+      throw err;
+    });
+
+    return command;
+  }
+
+  protected initLogger(options: AppLoggerOptions) {
+    this._logger = createSystemLogger({
+      dirname: getLoggerFilePath(this.name),
+      filename: 'system',
+      seperateError: true,
+      ...(options?.system || {}),
+    }).child({
+      reqId: this.context.reqId,
+      app: this.name,
+      module: 'application',
+      // Due to the use of custom log levels,
+      // we have to use any type here until Winston updates the type definitions.
+    }) as any;
+    this.requestLogger = createLogger({
+      dirname: getLoggerFilePath(this.name),
+      filename: 'request',
+      ...(options?.request || {}),
+    });
+    this.sqlLogger = this.createLogger({
+      filename: 'sql',
+      level: 'debug',
+    });
+  }
+
+  protected closeLogger() {
+    this.log?.close();
+    this.requestLogger?.close();
+    this.sqlLogger?.close();
   }
 
   protected init() {
     const options = this.options;
 
-    this._logger = createSystemLogger({
-      dirname: getLoggerFilePath(this.name),
-      filename: 'system',
-      seperateError: true,
-      ...(options.logger?.system || {}),
-    }).child({
-      reqId: this.context.reqId,
-      app: this.name,
-      module: 'application',
-    });
+    this.initLogger(options.logger);
 
     this.reInitEvents();
 
@@ -1088,6 +1147,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
+    this._dataSourceManager.use(parseVariables, {
+      group: 'parseVariables',
+      after: 'acl',
+    });
+    this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
+
     this._locales = new Locale(createAppProxy(this));
 
     if (options.perfHooks) {
@@ -1121,10 +1186,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const sqlLogger = this.createLogger({
-      filename: 'sql',
-      level: 'debug',
-    });
     const logging = (msg: any) => {
       if (typeof msg === 'string') {
         msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
@@ -1132,7 +1193,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+      this.sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
     };
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({

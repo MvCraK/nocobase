@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useContext } from 'react';
 import {
   EditDescription,
@@ -103,6 +112,9 @@ const EditOperator = () => {
   if (!operatorList.length) {
     const names = fieldName.split('.');
     const name = names.pop();
+    if (names.length < 2) {
+      return null;
+    }
     props = cm.getCollectionField(names.join('.'));
     if (!props) {
       return null;

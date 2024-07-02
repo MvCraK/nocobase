@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
 import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
-import { PluginMultiAppManager } from '../server';
+import { PluginMultiAppManagerServer } from '../server';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -13,7 +22,7 @@ describe('multiple apps', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['multi-app-manager'],
+      plugins: ['nocobase', 'multi-app-manager'],
     });
     db = app.db;
   });
@@ -48,7 +57,7 @@ describe('multiple apps', () => {
   it('should register db creator', async () => {
     const fn = vi.fn();
 
-    const appPlugin = app.getPlugin<PluginMultiAppManager>(PluginMultiAppManager);
+    const appPlugin = app.getPlugin<PluginMultiAppManagerServer>(PluginMultiAppManagerServer);
     const defaultDbCreator = appPlugin.appDbCreator;
 
     appPlugin.setAppDbCreator(async (app) => {
@@ -92,6 +101,69 @@ describe('multiple apps', () => {
 
     const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
     expect(subAppStatus).toEqual('running');
+  });
+
+  it('should not create application named with main', async () => {
+    const name = 'main';
+
+    let err;
+
+    try {
+      await db.getRepository('applications').create({
+        values: {
+          name,
+          options: {
+            plugins: [],
+          },
+        },
+        context: {
+          waitSubAppInstall: true,
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+
+    expect(await db.getRepository('applications').count()).toBe(0);
+  });
+
+  it('should upgrade sub app', async () => {
+    await db.getRepository('applications').create({
+      values: {
+        name: 'test1',
+        options: {
+          plugins: ['nocobase'],
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    await db.getRepository('applications').create({
+      values: {
+        name: 'test2',
+        options: {
+          plugins: ['nocobase'],
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    await app.runCommand('restart');
+    await app.runCommand('upgrade');
+    // const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
+    // expect(subAppStatus).toEqual('running');
+    //
+    // const subApp = await AppSupervisor.getInstance().getApp(name);
+    // await subApp.runCommand('upgrade');
+    //
+    // await AppSupervisor.getInstance().removeApp(name);
+    // expect(await db.getRepository('applications').count()).toBe(1);
   });
 
   it('should list application with status', async () => {

@@ -1,14 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
+import { useTableSelectorContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useRecord } from '../../../record-provider';
-import { useLocalVariables, useVariables } from '../../../variables';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -17,13 +27,13 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useLocalVariables, useVariables } from '../../../variables';
+import { RecordPickerContext } from '../../antd/record-picker';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
-import { RecordPickerContext } from '../../antd/record-picker';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
-import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection_deprecated();
@@ -110,7 +120,7 @@ export const TableSelectorDesigner = () => {
         <SchemaSettingsSwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={field.decoratorProps.treeTable !== false}
+          checked={field.decoratorProps.treeTable}
           onChange={(flag) => {
             field.form.clearFormGraph(`${field.address}.*`);
             field.decoratorProps.treeTable = flag;

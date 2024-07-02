@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
@@ -25,8 +34,6 @@ export const createFilterFormBlockSchema = (options: {
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
     'x-filter-targets': [],
-    // 用于存储用户设置的每个字段的运算符，目前仅筛选表单区块支持自定义
-    'x-filter-operators': {},
     properties: {
       [uid()]: {
         type: 'void',

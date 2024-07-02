@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useField, useFieldSchema } from '@formily/react';
 import {
   useFormBlockContext,
@@ -5,10 +14,10 @@ import {
   useCollection_deprecated,
   useDesignable,
   SchemaSettings,
-  FixedBlockDesignerItem,
   SchemaSettingsBlockTitleItem,
   removeNullCondition,
   SchemaSettingsTemplate,
+  SchemaSettingsBlockHeightItem,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
@@ -17,6 +26,10 @@ export const kanbanSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'dataScope',
@@ -48,10 +61,6 @@ export const kanbanSettings = new SchemaSettings({
           },
         };
       },
-    },
-    {
-      name: 'fixedBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'template',

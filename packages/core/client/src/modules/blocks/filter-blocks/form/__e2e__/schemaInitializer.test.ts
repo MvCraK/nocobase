@@ -1,4 +1,21 @@
-import { createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Page, createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
+import { oneFilterFormWithInherit } from './templates';
+
+const deleteButton = async (page: Page, name: string) => {
+  await page.getByLabel(`action-Action-${name}-`).hover();
+  await page.getByLabel(`action-Action-${name}-`).getByLabel('designer-schema-settings-').hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+};
 
 test.describe('where filter form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -65,7 +82,25 @@ test.describe('configure fields', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-general-filter-form')).toBeVisible();
   });
 
-  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});
+  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {
+    await mockPage(oneFilterFormWithInherit).goto();
+
+    // 选择继承的字段
+    await page.getByLabel('schema-initializer-Grid-filterForm:configureFields-child').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-child-filter-form-child.parentField1-parentField1')
+        .getByRole('textbox'),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-child-filter-form-child.parentField2-parentField2')
+        .getByRole('textbox'),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure actions', () => {
@@ -76,21 +111,13 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Reset' }).getByRole('switch')).toBeChecked();
-
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action-Filter-submit-general-filter-form')).toBeVisible();
     await expect(page.getByLabel('action-Action-Reset-general-filter-form')).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Reset' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Reset' }).getByRole('switch')).not.toBeChecked();
-
+    await deleteButton(page, 'Filter');
+    await deleteButton(page, 'Reset');
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action-Filter-submit-general-filter-form')).not.toBeVisible();
     await expect(page.getByLabel('action-Action-Reset-general-filter-form')).not.toBeVisible();

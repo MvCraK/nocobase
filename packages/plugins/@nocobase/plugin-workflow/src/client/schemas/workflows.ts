@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { ISchema, useForm } from '@formily/react';
 import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
@@ -37,6 +46,30 @@ const collection = {
           popupMatchSelectWidth: true,
           listHeight: 300,
         },
+        required: true,
+      } as ISchema,
+    },
+    {
+      type: 'boolean',
+      name: 'sync',
+      interface: 'select',
+      uiSchema: {
+        title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
+        type: 'boolean',
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        enum: [
+          {
+            label: `{{ t("Asynchronously", { ns: "${NAMESPACE}" }) }}`,
+            value: false,
+            color: 'cyan',
+          },
+          {
+            label: `{{ t("Synchronously", { ns: "${NAMESPACE}" }) }}`,
+            value: true,
+            color: 'orange',
+          },
+        ],
         required: true,
       } as ISchema,
     },
@@ -188,6 +221,40 @@ export const workflowSchema: ISchema = {
               },
               'x-align': 'left',
             },
+            refresher: {
+              type: 'void',
+              title: '{{ t("Refresh") }}',
+              'x-component': 'Action',
+              'x-use-component-props': 'useRefreshActionProps',
+              'x-component-props': {
+                icon: 'ReloadOutlined',
+              },
+            },
+            sync: {
+              type: 'void',
+              title: `{{t("Sync", { ns: "${NAMESPACE}" })}}`,
+              'x-decorator': 'Tooltip',
+              'x-decorator-props': {
+                title: `{{ t("Sync enabled status of all workflows from database", { ns: "${NAMESPACE}" }) }}`,
+              },
+              'x-component': 'Action',
+              'x-component-props': {
+                icon: 'SyncOutlined',
+                useAction() {
+                  const { t } = useTranslation();
+                  const { resource } = useResourceContext();
+                  const service = useResourceActionContext();
+                  return {
+                    async run() {
+                      await resource.sync();
+                      await service?.refresh();
+                      message.success(t('Operation succeeded'));
+                    },
+                  };
+                },
+              },
+              'x-reactions': ['{{useWorkflowSyncAction}}'],
+            },
             delete: {
               type: 'void',
               title: '{{t("Delete")}}',
@@ -283,6 +350,18 @@ export const workflowSchema: ISchema = {
               properties: {
                 type: {
                   type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            sync: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                sync: {
+                  type: 'boolean',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin, SchemaInitializerItemType } from '@nocobase/client';
 import { AuditLogsProvider } from './AuditLogsProvider';
 import {
@@ -15,7 +24,7 @@ import {
 export * from './AuditLogsBlockInitializer';
 export * from './AuditLogsProvider';
 
-export class AuditLogsPlugin extends Plugin {
+export class PluginAuditLogsClient extends Plugin {
   async load() {
     this.app.use(AuditLogsProvider);
     this.app.schemaInitializerManager.add(auditLogsTableActionInitializers_deprecated);
@@ -36,4 +45,4 @@ export class AuditLogsPlugin extends Plugin {
   }
 }
 
-export default AuditLogsPlugin;
+export default PluginAuditLogsClient;

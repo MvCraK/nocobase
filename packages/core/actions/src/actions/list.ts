@@ -1,4 +1,13 @@
-import { assign } from '@nocobase/utils';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { assign, isValidFilter } from '@nocobase/utils';
 import { Context } from '..';
 import { getRepositoryFromParams, pageArgsToLimitArgs } from '../utils';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constants';
@@ -11,12 +20,16 @@ function findArgs(ctx: Context) {
   const resourceName = ctx.action.resourceName;
   const params = ctx.action.params;
   if (params.tree) {
-    const [collectionName, associationName] = resourceName.split('.');
-    const collection = ctx.db.getCollection(resourceName);
-    // tree collection 或者关系表是 tree collection
-    if (collection.options.tree && !(associationName && collectionName === collection.name)) {
-      const foreignKey = collection.treeParentField?.foreignKey || 'parentId';
-      assign(params, { filter: { [foreignKey]: null } }, { filter: 'andMerge' });
+    if (isValidFilter(params.filter)) {
+      params.tree = false;
+    } else {
+      const [collectionName, associationName] = resourceName.split('.');
+      const collection = ctx.db.getCollection(resourceName);
+      // tree collection 或者关系表是 tree collection
+      if (collection.options.tree && !(associationName && collectionName === collection.name)) {
+        const foreignKey = collection.treeParentField?.foreignKey || 'parentId';
+        assign(params, { filter: { [foreignKey]: null } }, { filter: 'andMerge' });
+      }
     }
   }
   const { tree, fields, filter, appends, except, sort } = params;

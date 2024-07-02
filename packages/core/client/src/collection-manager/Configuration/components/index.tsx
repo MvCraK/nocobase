@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select, AutoComplete } from 'antd';
@@ -326,13 +335,13 @@ export const ThroughCollection = observer(
       }
     }, []);
     const handleSearch = (value: string) => {
+      const data = loadCollections();
       if (value) {
-        const filteredOptions = options.filter((option) => {
+        const filteredOptions = data.filter((option) => {
           return option.label.toLowerCase().includes(value.toLowerCase());
         });
         setOptions(filteredOptions);
       } else {
-        const data = loadCollections();
         setOptions(data);
       }
     };

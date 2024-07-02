@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createMapBlockUISchema } from '../../block/createMapBlockUISchema';
 
 vi.mock('@formily/shared', () => {
@@ -24,11 +33,7 @@ test('createMapBlockSchema should return an object with expected properties', ()
         "actions": {
           "type": "void",
           "x-component": "ActionBar",
-          "x-component-props": {
-            "style": {
-              "marginBottom": 16,
-            },
-          },
+          "x-component-props": {},
           "x-initializer": "map:configureActions",
         },
         "mocked-uid": {
@@ -55,7 +60,7 @@ test('createMapBlockSchema should return an object with expected properties', ()
                   "type": "void",
                   "x-component": "Tabs",
                   "x-component-props": {},
-                  "x-initializer": "TabPaneInitializers",
+                  "x-initializer": "popup:addTab",
                 },
               },
               "title": "{{ t("View record") }}",

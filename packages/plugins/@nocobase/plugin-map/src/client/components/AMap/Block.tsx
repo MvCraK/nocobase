@@ -1,14 +1,26 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
 import { RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   RecordProvider,
+  VariablePopupRecordProvider,
   css,
+  getLabelFormatValue,
+  useCollection,
   useCollectionManager_deprecated,
+  useCollectionParentRecordData,
   useCollection_deprecated,
   useCompile,
   useFilterAPI,
-  useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -37,7 +49,8 @@ export const AMapBlock = (props) => {
   const [, setPrevSelected] = useState<any>(null);
   const selectingModeRef = useRef(selectingMode);
   selectingModeRef.current = selectingMode;
-
+  const { fields } = useCollection();
+  const labelUiSchema = fields.find((v) => v.name === fieldNames?.marker)?.uiSchema;
   const setOverlayOptions = (overlay: AMap.Polygon | AMap.Marker, state?: boolean) => {
     const extData = overlay.getExtData();
     const selected = typeof state === 'undefined' ? extData.selected : !state;
@@ -122,6 +135,7 @@ export const AMapBlock = (props) => {
     const overlays = dataSource
       .map((item) => {
         const data = getSource(item, fieldNames?.field, cf?.interface)?.filter(Boolean);
+        const title = getLabelFormatValue(labelUiSchema, item[fieldNames.marker]);
         if (!data?.length) return [];
         return data.map((mapItem) => {
           const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
@@ -131,7 +145,7 @@ export const AMapBlock = (props) => {
             label: {
               direction: 'bottom',
               offset: [0, 5],
-              content: fieldNames?.marker ? compile(item[fieldNames.marker]) : undefined,
+              content: fieldNames?.marker ? compile(title) : undefined,
             },
             extData: {
               id: item[primaryKey],
@@ -312,6 +326,8 @@ export const AMapBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
+  const { t } = useMapTranslation();
+  const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema = useMemo(
@@ -329,7 +345,9 @@ const MapBlockDrawer = (props) => {
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
         <RecordProvider record={record} parent={parentRecordData}>
-          <RecursionField schema={schema} name={schema.name} />
+          <VariablePopupRecordProvider recordData={record} collection={collection}>
+            <RecursionField schema={schema} name={schema.name} />
+          </VariablePopupRecordProvider>
         </RecordProvider>
       </ActionContextProvider>
     )

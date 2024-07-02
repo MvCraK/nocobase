@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { get } from 'lodash';
 import { BelongsTo, HasOne } from 'sequelize';
 import { Model, modelAssociationByKey } from '@nocobase/database';
@@ -15,9 +24,12 @@ export default class extends Trigger {
   constructor(workflow: WorkflowPlugin) {
     super(workflow);
 
-    workflow.app.use(this.middleware, { after: 'dataSource' });
+    workflow.app.dataSourceManager.use(this.middleware);
   }
 
+  /**
+   * @deprecated
+   */
   async workflowTriggerAction(context: Context, next: Next) {
     const { triggerWorkflows } = context.action.params;
 
@@ -54,7 +66,15 @@ export default class extends Trigger {
       params: { triggerWorkflows = '', values },
     } = context.action;
     const dataSourceHeader = context.get('x-data-source') || 'main';
-    const fullCollectionName = joinCollectionName(dataSourceHeader, resourceName);
+    const collection = context.app.dataSourceManager.dataSources
+      .get(dataSourceHeader)
+      .collectionManager.getCollection(resourceName);
+
+    if (!collection) {
+      return;
+    }
+
+    const fullCollectionName = joinCollectionName(dataSourceHeader, collection.name);
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
@@ -95,8 +115,8 @@ export default class extends Trigger {
     const syncGroup = [];
     const asyncGroup = [];
     for (const workflow of triggeringLocalWorkflows.concat(...globalWorkflows.values())) {
-      const { collection, appends = [] } = workflow.config;
-      const [dataSourceName, collectionName] = parseCollectionName(collection);
+      const { appends = [] } = workflow.config;
+      const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
       const dataPath = triggersKeysMap.get(workflow.key);
       const event = [workflow];
       if (context.action.resourceName !== 'workflows') {

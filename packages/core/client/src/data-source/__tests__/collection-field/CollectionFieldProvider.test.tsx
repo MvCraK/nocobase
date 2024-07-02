@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { ComponentType } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
@@ -10,7 +19,7 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp(Demo: ComponentType, name?: string) {
+function renderAppOptions(Demo: ComponentType, name?: string) {
   const app = new Application({
     dataSourceManager: {
       collections: collections as any,
@@ -42,7 +51,7 @@ describe('CollectionFieldProvider', () => {
       );
     };
 
-    renderApp(Demo, 'nickname');
+    renderAppOptions(Demo, 'nickname');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('nickname');
   });
@@ -52,7 +61,7 @@ describe('CollectionFieldProvider', () => {
       return <div>children</div>;
     };
 
-    renderApp(Demo, 'not-exists');
+    renderAppOptions(Demo, 'not-exists');
 
     expect(document.body.innerHTML).toContain('ant-typography');
     expect(document.body.innerHTML).not.toContain('children');

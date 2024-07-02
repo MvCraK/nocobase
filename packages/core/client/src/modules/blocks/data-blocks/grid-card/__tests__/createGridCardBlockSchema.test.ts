@@ -1,4 +1,13 @@
-import { createGridCardBlockSchema } from '../createGridCardBlockSchema';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createGridCardBlockUISchema } from '../createGridCardBlockUISchema';
 
 describe('createGridCardBlockSchema', () => {
   test('should return the correct schema', () => {
@@ -10,7 +19,7 @@ describe('createGridCardBlockSchema', () => {
       rowKey: 'testRowKey',
     };
 
-    const schema = createGridCardBlockSchema(options);
+    const schema = createGridCardBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {
@@ -86,7 +95,7 @@ describe('createGridCardBlockSchema', () => {
       rowKey: 'testRowKey',
     };
 
-    const schema = createGridCardBlockSchema(options);
+    const schema = createGridCardBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {

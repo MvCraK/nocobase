@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldsTable } from '.';
+// import { CollectionFieldsTable } from '.';
 import {
   useAPIClient,
   useCurrentAppInfo,
@@ -191,7 +200,6 @@ export const ConfigurationTable = () => {
           EditSubFieldAction,
           FieldSummary,
           TemplateSummay: TemplateSummary,
-          CollectionFieldsTable,
           CollectionFields,
         }}
         scope={{

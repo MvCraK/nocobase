@@ -1,5 +1,14 @@
-import { MenuOutlined } from '@ant-design/icons';
-import { ISchema, useFieldSchema } from '@formily/react';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { PlusOutlined } from '@ant-design/icons';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +18,7 @@ import { SchemaInitializerActionModal } from '../../../../application/schema-ini
 import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
 import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { SelectWithTitle } from '../../../../common/SelectWithTitle';
 import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
@@ -22,12 +32,10 @@ export const Resizable = () => {
       title={t('Column width')}
       component={React.forwardRef<any, any>((props, ref) => {
         const { children, onClick, ...others } = props;
-        const { setVisible } = useSchemaInitializer();
         return (
           <SchemaInitializerItem
             ref={ref}
             onClick={({ event }) => {
-              setVisible(false);
               onClick(event);
             }}
             {...others}
@@ -66,6 +74,43 @@ export const Resizable = () => {
   );
 };
 
+export const SchemaSettingsFixed = () => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+
+  const options = [
+    { label: t('Not fixed'), value: 'none' },
+    { label: t('Left fixed'), value: 'left' },
+    { label: t('Right fixed'), value: 'right' },
+  ];
+  return (
+    <SchemaInitializerItem>
+      <SelectWithTitle
+        key="fixed"
+        title={t('Fixed')}
+        options={options}
+        defaultValue={field.componentProps?.fixed || 'none'}
+        onChange={(fixed) => {
+          const schema = {
+            ['x-uid']: fieldSchema['x-uid'],
+          };
+          fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+          fieldSchema['x-component-props']['fixed'] = fixed;
+          schema['x-component-props'] = fieldSchema['x-component-props'];
+          field.componentProps = field.componentProps || {};
+          field.componentProps.fixed = fixed;
+          void dn.emit('patch', {
+            schema,
+          });
+          dn.refresh();
+        }}
+      />
+    </SchemaInitializerItem>
+  );
+};
+
 const commonOptions = {
   insertPosition: 'beforeEnd',
   useInsert: function useInsert() {
@@ -98,149 +143,131 @@ const commonOptions = {
   Component: (props: any) => {
     const { getAriaLabel } = useGetAriaLabelOfDesigner();
     return (
-      <MenuOutlined
+      <PlusOutlined
         {...props}
         role="button"
-        aria-label={getAriaLabel('schema-settings')}
+        aria-label={getAriaLabel('schema-initializer')}
         style={{ cursor: 'pointer' }}
       />
     );
   },
   items: [
     {
-      type: 'itemGroup',
-      name: 'actions',
-      title: '{{t("Enable actions")}}',
-      children: [
-        {
-          type: 'item',
-          title: '{{t("View")}}',
-          name: 'view',
-          Component: 'ViewActionInitializer',
-          schema: {
-            'x-component': 'Action.Link',
-            'x-action': 'view',
-            'x-decorator': 'ACLActionProvider',
-          },
-        },
-        {
-          type: 'item',
-          name: 'edit',
-          title: '{{t("Edit")}}',
-          Component: 'UpdateActionInitializer',
-          schema: {
-            'x-component': 'Action.Link',
-            'x-action': 'update',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
-        {
-          type: 'item',
-          title: '{{t("Delete")}}',
-          name: 'delete',
-          Component: 'DestroyActionInitializer',
-          schema: {
-            'x-component': 'Action.Link',
-            'x-action': 'destroy',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
-        {
-          type: 'item',
-          title: '{{t("Disassociate")}}',
-          name: 'disassociate',
-          Component: 'DisassociateActionInitializer',
-          schema: {
-            'x-component': 'Action.Link',
-            'x-action': 'disassociate',
-            'x-acl-action': 'destroy',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const props = useDataBlockProps();
-            const collection = useCollection_deprecated();
-            return (
-              !!props?.association &&
-              (collection.template !== 'view' || collection?.writableView) &&
-              collection.template !== 'sql'
-            );
-          },
-        },
-        {
-          type: 'item',
-          title: '{{t("Add child")}}',
-          name: 'addChildren',
-          Component: 'CreateChildInitializer',
-          schema: {
-            'x-component': 'Action.Link',
-            'x-action': 'create',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            const collection = useCollection_deprecated();
-            const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
-            return collection.tree && treeTable !== false;
-          },
-        },
-      ],
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      type: 'subMenu',
-      title: '{{t("Customize")}}',
-      name: 'customize',
-      children: [
-        {
-          type: 'item',
-          title: '{{t("Popup")}}',
-          name: 'popup',
-          Component: 'PopupActionInitializer',
-        },
-        {
-          type: 'item',
-          title: '{{t("Update record")}}',
-          name: 'updateRecord',
-          Component: 'UpdateRecordActionInitializer',
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
-        {
-          name: 'customRequest',
-          title: '{{t("Custom request")}}',
-          Component: 'CustomRequestInitializer',
-          schema: {
-            'x-action': 'customize:table:request',
-          },
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
-      ],
-    },
-    {
-      name: 'divider2',
-      type: 'divider',
+      type: 'item',
+      title: '{{t("View")}}',
+      name: 'view',
+      Component: 'ViewActionInitializer',
+      schema: {
+        'x-component': 'Action.Link',
+        'x-action': 'view',
+        'x-decorator': 'ACLActionProvider',
+      },
     },
     {
       type: 'item',
-      name: 'columnWidth',
-      title: 't("Column width")',
-      Component: Resizable,
+      name: 'edit',
+      title: '{{t("Edit")}}',
+      Component: 'UpdateActionInitializer',
+      schema: {
+        'x-component': 'Action.Link',
+        'x-action': 'update',
+        'x-decorator': 'ACLActionProvider',
+      },
+      useVisible() {
+        const collection = useCollection_deprecated();
+        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+      },
+    },
+    {
+      type: 'item',
+      title: '{{t("Delete")}}',
+      name: 'delete',
+      Component: 'DestroyActionInitializer',
+      schema: {
+        'x-component': 'Action.Link',
+        'x-action': 'destroy',
+        'x-decorator': 'ACLActionProvider',
+      },
+      useVisible() {
+        const collection = useCollection_deprecated();
+        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+      },
+    },
+    {
+      type: 'item',
+      title: '{{t("Disassociate")}}',
+      name: 'disassociate',
+      Component: 'DisassociateActionInitializer',
+      schema: {
+        'x-component': 'Action.Link',
+        'x-action': 'disassociate',
+        'x-acl-action': 'destroy',
+        'x-decorator': 'ACLActionProvider',
+      },
+      useVisible() {
+        const props = useDataBlockProps();
+        const collection = useCollection_deprecated();
+        return (
+          !!props?.association &&
+          (collection.template !== 'view' || collection?.writableView) &&
+          collection.template !== 'sql'
+        );
+      },
+    },
+    {
+      type: 'item',
+      title: '{{t("Add child")}}',
+      name: 'addChildren',
+      Component: 'CreateChildInitializer',
+      schema: {
+        'x-component': 'Action.Link',
+        'x-action': 'create',
+        'x-decorator': 'ACLActionProvider',
+      },
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        const collection = useCollection_deprecated();
+        const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
+        return collection.tree && treeTable;
+      },
+    },
+    {
+      type: 'item',
+      title: '{{t("Popup")}}',
+      name: 'popup',
+      Component: 'PopupActionInitializer',
+    },
+    {
+      type: 'item',
+      title: '{{t("Update record")}}',
+      name: 'updateRecord',
+      Component: 'UpdateRecordActionInitializer',
+      useVisible() {
+        const collection = useCollection_deprecated();
+        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+      },
+    },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request',
+      },
+      useVisible() {
+        const collection = useCollection_deprecated();
+        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+      },
+    },
+    {
+      name: 'link',
+      title: '{{t("Link")}}',
+      Component: 'LinkActionInitializer',
+      useComponentProps() {
+        return {
+          'x-component': 'Action.Link',
+        };
+      },
     },
   ],
 };

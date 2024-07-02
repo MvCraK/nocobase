@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique, primaryKey } from './properties';
 import { i18n } from '../../i18n';
@@ -6,7 +15,7 @@ import { CollectionFieldInterface } from '../../data-source/collection-field-int
 
 registerValidateRules({
   username(value) {
-    return /^[^@.<>"'/]{2,16}$/.test(value) || i18n.t('Must be 2-16 characters in length (excluding @.<>"\'/)');
+    return /^[^@.<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding @.<>"\'/)');
   },
 });
 

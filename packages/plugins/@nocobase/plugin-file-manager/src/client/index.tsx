@@ -1,12 +1,23 @@
-import { Plugin, useCollection_deprecated } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Plugin, useCollection } from '@nocobase/client';
 import { FileManagerProvider } from './FileManagerProvider';
 import { FileStoragePane } from './FileStorage';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
+import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
+import { FileSizeField } from './FileSizeField';
 
-export class FileManagerPlugin extends Plugin {
+export class PluginFileManagerClient extends Plugin {
   storageTypes = new Map();
 
   async load() {
@@ -36,9 +47,18 @@ export class FileManagerPlugin extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         return collection.template === 'file';
       },
+    });
+
+    this.app.addScopes({
+      useAttachmentFieldProps,
+      useFileCollectionStorageRules,
+    });
+
+    this.app.addComponents({
+      FileSizeField,
     });
   }
 
@@ -47,4 +67,4 @@ export class FileManagerPlugin extends Plugin {
   }
 }
 
-export default FileManagerPlugin;
+export default PluginFileManagerClient;

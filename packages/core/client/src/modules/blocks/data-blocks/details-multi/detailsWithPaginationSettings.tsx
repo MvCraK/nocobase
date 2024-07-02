@@ -1,20 +1,47 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../../block-provider';
+import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockProvider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import { SchemaSettingsBlockTitleItem, SchemaSettingsTemplate } from '../../../../schema-settings';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
+import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
-import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
     name: 'title',
     Component: SchemaSettingsBlockTitleItem,
+  },
+  {
+    name: 'setTheBlockHeight',
+    Component: SchemaSettingsBlockHeightItem,
+  },
+  {
+    name: 'linkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      return {
+        collectionName: name,
+        readPretty: true,
+      };
+    },
   },
   {
     name: 'dataScope',
@@ -25,10 +52,13 @@ const commonItems: SchemaSettingsItemType[] = [
       const { form } = useFormBlockContext();
       const field = useField();
       const { dn } = useDesignable();
+      const { service } = useDetailsBlockContext();
+
       return {
         collectionName: name,
         defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
         form,
+        noRecord: true,
         onSubmit: ({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
@@ -42,6 +72,7 @@ const commonItems: SchemaSettingsItemType[] = [
               'x-decorator-props': fieldSchema['x-decorator-props'],
             },
           });
+          service.params[0].page = 1;
         },
       };
     },

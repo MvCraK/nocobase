@@ -1,6 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '@nocobase/database';
 import { createMockServer } from '@nocobase/test';
 import nodemailerMock from 'nodemailer-mock';
+import os from 'os';
 import { Notification, NotificationService } from '../models';
 
 describe('notifications', () => {
@@ -17,7 +27,7 @@ describe('notifications', () => {
 
   afterEach(() => app.destroy());
 
-  it('create', async () => {
+  it.skipIf(os.platform() === 'win32')('create', async () => {
     const Notification = db.getCollection('notifications');
     const notification = (await Notification.repository.create({
       values: {

@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context, Next } from '@nocobase/actions';
-import { Field, FilterParser, snakeCase } from '@nocobase/database';
+import { Field, FilterParser } from '@nocobase/database';
 import { formatter } from './formatter';
 import compose from 'koa-compose';
-import { parseFilter, getDateVars } from '@nocobase/utils';
 import { Cache } from '@nocobase/cache';
+import { middlewares } from '@nocobase/server';
 
 type MeasureProps = {
   field: string | string[];
@@ -127,7 +136,7 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
     const attribute = [];
     const col = sequelize.col(field);
     if (format) {
-      attribute.push(formatter(sequelize, type, field, format));
+      attribute.push(formatter(sequelize, type, field, format, ctx.timezone));
     } else {
       attribute.push(col);
     }
@@ -250,52 +259,11 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
 
 export const parseVariables = async (ctx: Context, next: Next) => {
   const { filter } = ctx.action.params.values;
-  if (!filter) {
-    return next();
-  }
-  const isNumeric = (str: any) => {
-    if (typeof str === 'number') return true;
-    if (typeof str != 'string') return false;
-    return !isNaN(str as any) && !isNaN(parseFloat(str));
-  };
-  const getUser = () => {
-    return async ({ fields }) => {
-      const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
-      ctx.logger?.info('parse filter variables', { userFields, method: 'parseVariables' });
-      if (!ctx.state.currentUser) {
-        return;
-      }
-      if (!userFields.length) {
-        return;
-      }
-      const user = await ctx.db.getRepository('users').findOne({
-        filterByTk: ctx.state.currentUser.id,
-        fields: userFields,
-      });
-      ctx.logger?.info('parse filter variables', {
-        $user: user?.toJSON(),
-        method: 'parseVariables',
-      });
-      return user;
-    };
-  };
-  ctx.action.params.values.filter = await parseFilter(filter, {
-    timezone: ctx.get('x-timezone'),
-    now: new Date().toISOString(),
-    getField: (path: string) => {
-      const fieldPath = path
-        .split('.')
-        .filter((p) => !p.startsWith('$') && !isNumeric(p))
-        .join('.');
-      const { resourceName } = ctx.action;
-      return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
-    },
-    vars: {
-      $nDate: getDateVars(),
-      $user: getUser(),
-    },
+  ctx.action.params.filter = filter;
+  await middlewares.parseVariables(ctx, async () => {
+    ctx.action.params.values.filter = ctx.action.params.filter;
+    await next();
   });
-  await next();
 };
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
@@ -316,7 +284,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
 };
 
-const checkPermission = (ctx: Context, next: Next) => {
+export const checkPermission = (ctx: Context, next: Next) => {
   const { collection } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
   const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });

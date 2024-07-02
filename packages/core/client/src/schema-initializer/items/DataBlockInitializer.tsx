@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Icon, { TableOutlined } from '@ant-design/icons';
 import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   SchemaInitializerItem,
@@ -8,11 +17,11 @@ import {
   useGetSchemaInitializerMenuItems,
   useSchemaInitializer,
 } from '../../application';
+import { DataSource } from '../../data-source';
 import { Collection, CollectionFieldOptions } from '../../data-source/collection/Collection';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
-import { DataSource } from '../../data-source';
 
 const MENU_ITEM_HEIGHT = 40;
 const STEP = 15;
@@ -260,8 +269,10 @@ export interface DataBlockInitializerProps {
     templateSchema: any,
     {
       item,
+      fromOthersInPopup,
     }: {
       item: any;
+      fromOthersInPopup?: boolean;
     },
   ) => any;
   onCreateBlockSchema?: (args: any) => void;
@@ -269,8 +280,15 @@ export interface DataBlockInitializerProps {
   icon?: string | React.ReactNode;
   name: string;
   title: string;
+  /**
+   * 用来筛选弹窗中的 “Current record” 和 “Associated records” 选项中的数据表
+   */
   filter?: (options: { collection: Collection; associationField: CollectionFieldOptions }) => boolean;
   filterDataSource?: (dataSource: DataSource) => boolean;
+  /**
+   * 用来筛选弹窗中的 “Other records” 选项中的数据表
+   */
+  filterOtherRecordsCollection?: (collection: Collection) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
   hideSearch?: boolean;
@@ -278,9 +296,19 @@ export interface DataBlockInitializerProps {
   /** 如果只有一项数据表时，不显示 children 列表 */
   hideChildrenIfSingleCollection?: boolean;
   items?: ReturnType<typeof useCollectionDataSourceItems>[];
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
+  onClick?: (args: any) => void;
+  /** 用于更改 Current record 的文案 */
+  currentText?: string;
+  /** 用于更改 Other records 的文案 */
+  otherText?: string;
+  children?: React.ReactNode;
 }
 
-export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
+export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
   const {
     templateWrap,
     onCreateBlockSchema,
@@ -295,23 +323,35 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     hideChildrenIfSingleCollection,
     filterDataSource,
     items: itemsFromProps,
+    hideOtherRecordsInPopup,
+    onClick: propsOnClick,
+    filterOtherRecordsCollection,
+    currentText,
+    otherText,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(
-    async ({ item }) => {
+    async (options) => {
+      const { item, fromOthersInPopup } = options;
+
+      if (propsOnClick) {
+        return propsOnClick(options);
+      }
+
       if (item.template) {
         const s = await getTemplateSchemaByMode(item);
-        templateWrap ? insert(templateWrap(s, { item })) : insert(s);
+        templateWrap ? insert(templateWrap(s, { item, fromOthersInPopup })) : insert(s);
       } else {
         if (onCreateBlockSchema) {
-          onCreateBlockSchema({ item });
+          onCreateBlockSchema({ item, fromOthersInPopup });
         }
       }
+
       setVisible(false);
     },
-    [getTemplateSchemaByMode, insert, onCreateBlockSchema, setVisible, templateWrap],
+    [getTemplateSchemaByMode, insert, setVisible, onCreateBlockSchema, propsOnClick, templateWrap],
   );
   const items =
     itemsFromProps ||
@@ -320,9 +360,14 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       componentName: componentType,
       filter,
       filterDataSource,
+      filterOtherRecordsCollection,
       onlyCurrentDataSource,
       showAssociationFields,
       dataBlockInitializerProps: props,
+      hideOtherRecordsInPopup,
+      onClick,
+      currentText,
+      otherText,
     });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {

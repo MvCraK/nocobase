@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
-import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
+import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 
 export const CreateSubmitActionInitializer = (props) => {
   const schema = {
@@ -17,5 +26,5 @@ export const CreateSubmitActionInitializer = (props) => {
       triggerWorkflows: [],
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

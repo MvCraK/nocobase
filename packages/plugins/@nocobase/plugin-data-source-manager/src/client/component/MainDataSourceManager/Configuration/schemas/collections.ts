@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
+import type { CollectionOptions } from '@nocobase/client';
+import { CollectionCategory, CollectionTemplateTag, i18n, useAPIClient } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, i18n } from '@nocobase/client';
-import { CollectionCategory, CollectionTemplateTag } from '@nocobase/client';
-import type { CollectionOptions } from '@nocobase/client';
+import { CollectionTitle } from '../../../CollectionsManager/CollectionTitle';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
@@ -189,11 +198,12 @@ export const collectionTableSchema: ISchema = {
       properties: {
         column1: {
           type: 'void',
+          title: '{{t("Collection display name")}}',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
           properties: {
             title: {
-              'x-component': 'CollectionField',
+              'x-component': CollectionTitle,
               'x-read-pretty': true,
             },
           },

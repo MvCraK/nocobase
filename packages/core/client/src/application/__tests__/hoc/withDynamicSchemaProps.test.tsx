@@ -1,7 +1,16 @@
-import React from 'react';
-import { SchemaComponent, SchemaComponentProvider } from '../../../schema-component';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { render } from '@nocobase/test/client';
-import { withDynamicSchemaProps } from '../../hoc';
+import React from 'react';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { SchemaComponent, SchemaComponentProvider } from '../../../schema-component';
 
 const HelloComponent = withDynamicSchemaProps((props: any) => (
   <pre data-testid="component">{JSON.stringify(props)}</pre>
@@ -212,5 +221,42 @@ describe('withDynamicSchemaProps', () => {
     const Demo = withTestDemo(schema, scopes);
     const { getByTestId } = render(<Demo />);
     expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ b: 'b' }));
+  });
+
+  test('override scope', () => {
+    function useDecoratorProps() {
+      return {
+        b: 'b',
+      };
+    }
+    function useDecoratorProps2() {
+      return {
+        c: 'c',
+      };
+    }
+    const schema = {
+      'x-use-decorator-props': 'cm.useDecoratorProps',
+    };
+    const scopes = { cm: { useDecoratorProps } };
+    const Demo = function () {
+      return (
+        <SchemaComponentProvider components={{ HelloComponent, HelloDecorator }} scope={scopes}>
+          <SchemaComponent
+            scope={{
+              cm: { useDecoratorProps: useDecoratorProps2 },
+            }}
+            schema={{
+              type: 'void',
+              name: 'hello',
+              'x-component': 'HelloComponent',
+              'x-decorator': 'HelloDecorator',
+              ...schema,
+            }}
+          />
+        </SchemaComponentProvider>
+      );
+    };
+    const { getByTestId } = render(<Demo />);
+    expect(getByTestId('decorator')).toHaveTextContent(JSON.stringify({ c: 'c' }));
   });
 });

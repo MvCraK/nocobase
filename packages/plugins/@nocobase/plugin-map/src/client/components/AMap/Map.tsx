@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
@@ -11,7 +20,7 @@ import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
 import { Search } from './Search';
-
+import { useMapHeight } from '../hook';
 export interface AMapComponentProps {
   value?: any;
   onChange?: (value: number[]) => void;
@@ -103,7 +112,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const navigate = useNavigate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
-
+  const height = useMapHeight();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
     strokeColor: '#4e9bff',
@@ -111,6 +120,12 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     strokeOpacity: 1,
     ...overlayCommonOptions,
   });
+
+  useEffect(() => {
+    if (map.current) {
+      map.current.setZoom(zoom);
+    }
+  }, [zoom]);
 
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
@@ -356,6 +371,8 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       map.current = null;
       mouseTool.current = null;
       editor.current = null;
+      // @ts-ignore
+      AMapLoader.reset();
     };
   }, [accessKey, type, securityJsCode]);
 
@@ -393,7 +410,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     <div
       className={css`
         position: relative;
-        height: 500px;
+        height: ${height || 500}px !important;
       `}
       id={id.current}
       style={props?.style}

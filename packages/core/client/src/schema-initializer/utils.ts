@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -11,16 +20,15 @@ import {
   useCollection,
   useCollectionManager,
   useDataSourceKey,
-  useFormActiveFields,
-  useFormBlockContext,
 } from '../';
+import { useFormBlockContext } from '../block-provider/FormBlockProvider';
+import { useFormActiveFields } from '../block-provider/hooks/useFormActiveFields';
 import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-
 export const itemsMerge = (items1) => {
   return items1;
 };
@@ -34,7 +42,7 @@ export const gridRowColWrap = (schema: ISchema) => {
         type: 'void',
         'x-component': 'Grid.Col',
         properties: {
-          [schema.name || uid()]: schema,
+          [schema?.name || uid()]: schema,
         },
       },
     },
@@ -96,7 +104,7 @@ const quickEditField = [
   'lineString',
 ];
 
-export const useTableColumnInitializerFields = () => {
+export function useTableColumnInitializerFields() {
   const { name, currentFields = [] } = useCollection_deprecated();
   const { getInterface, getCollection } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
@@ -105,12 +113,12 @@ export const useTableColumnInitializerFields = () => {
   const isReadPretty = isSubTable ? form.readPretty : true;
 
   return currentFields
-    .filter(
-      (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
-    )
+    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.treeChildren)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+      const isPreviewComponent = field?.uiSchema?.['x-component'] === 'Preview';
+
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
@@ -122,7 +130,9 @@ export const useTableColumnInitializerFields = () => {
                 value: 'id',
               },
             }
-          : {},
+          : isPreviewComponent
+            ? { size: 'small' }
+            : {},
         'x-read-pretty': isReadPretty || field.uiSchema?.['x-read-pretty'],
         'x-decorator': isSubTable
           ? quickEditField.includes(field.interface) || isFileCollection
@@ -155,9 +165,9 @@ export const useTableColumnInitializerFields = () => {
         schema,
       } as SchemaInitializerItemType;
     });
-};
+}
 
-export const useAssociatedTableColumnInitializerFields = () => {
+export function useAssociatedTableColumnInitializerFields() {
   const { name, fields } = useCollection_deprecated();
   const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const groups = fields
@@ -177,7 +187,6 @@ export const useAssociatedTableColumnInitializerFields = () => {
             // type: 'string',
             name: `${field.name}.${subField.name}`,
             // title: subField?.uiSchema?.title || subField.name,
-
             'x-component': 'CollectionField',
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
@@ -212,9 +221,9 @@ export const useAssociatedTableColumnInitializerFields = () => {
     });
 
   return groups;
-};
+}
 
-export const useInheritsTableColumnInitializerFields = () => {
+export function useInheritsTableColumnInitializerFields() {
   const { name } = useCollection_deprecated();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
     useCollectionManager_deprecated();
@@ -279,7 +288,7 @@ export const useInheritsTableColumnInitializerFields = () => {
         }),
     };
   });
-};
+}
 
 export const useFormItemInitializerFields = (options?: any) => {
   const { name, currentFields } = useCollection_deprecated();
@@ -290,7 +299,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
+    ?.filter((field) => field?.interface && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
@@ -357,7 +366,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+    ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
@@ -370,6 +379,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-settings': 'fieldSettings:FilterFormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
+        'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
       };
@@ -383,6 +393,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-settings': 'fieldSettings:FilterFormItem',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
+          'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': field.uiSchema?.['x-component-props'],
         };
@@ -490,7 +501,7 @@ const getItem = (
 
     return {
       type: 'subMenu',
-      name: field.uiSchema?.title,
+      name: schemaName,
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
@@ -558,7 +569,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
     const targetCollection = getCollection(v);
     return {
       [targetCollection?.title]: fields
-        ?.filter((field) => field?.interface && !field?.isForeignKey)
+        ?.filter((field) => field?.interface)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);
@@ -615,7 +626,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
     const targetCollection = getCollection(v);
     return {
       [targetCollection.title]: fields
-        ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+        ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);
@@ -665,12 +676,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return (
-        field?.interface &&
-        !field?.uiSchema?.['x-read-pretty'] &&
-        field.interface !== 'snapshot' &&
-        field.type !== 'sequence'
-      );
+      return field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -710,7 +716,7 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     if (s[key] === action) {
       return s;
     }
-    if (s['x-component'] !== 'Action.Container' && s['x-component'] !== 'AssociationField.Viewer') {
+    if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
       const c = findSchema(s, key, action);
       if (c) {
         return c;
@@ -750,9 +756,9 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     exists: !!schema,
     remove() {
       removeActiveFieldName?.(schema.name);
-      form?.query(schema.name).forEach((field: Field) => {
-        field.setInitialValue?.(null);
-        field.reset?.();
+      form?.query(new RegExp(`${schema.parent.name}.${schema.name}$`)).forEach((field: Field) => {
+        // 如果字段被删掉，那么在提交的时候不应该提交这个字段
+        field.setValue?.(undefined);
       });
       schema && rm(schema, remove);
     },
@@ -842,6 +848,11 @@ export const useCollectionDataSourceItems = ({
   showAssociationFields,
   filterDataSource,
   dataBlockInitializerProps,
+  hideOtherRecordsInPopup,
+  onClick,
+  filterOtherRecordsCollection,
+  currentText,
+  otherText,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
@@ -849,6 +860,17 @@ export const useCollectionDataSourceItems = ({
   showAssociationFields?: boolean;
   filterDataSource?: (dataSource?: DataSource) => boolean;
   dataBlockInitializerProps?: any;
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
+  onClick?: (options: any) => void;
+  /**
+   * 用来筛选弹窗中的 “Other records” 选项中的数据表
+   */
+  filterOtherRecordsCollection?: (collection: Collection) => boolean;
+  currentText?: string;
+  otherText?: string;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -908,7 +930,7 @@ export const useCollectionDataSourceItems = ({
         componentProps: {
           ...dataBlockInitializerProps,
           icon: null,
-          title: t('Current record'),
+          title: currentText || t('Current record'),
           name: 'currentRecord',
           hideSearch: false,
           hideChildrenIfSingleCollection: true,
@@ -936,19 +958,62 @@ export const useCollectionDataSourceItems = ({
           ],
         },
       };
+      const componentTypeMap = {
+        ReadPrettyFormItem: 'Details',
+      };
+      const otherRecords = {
+        name: 'otherRecords',
+        Component: DataBlockInitializer,
+        // 目的是使点击无效
+        onClick() {},
+        componentProps: {
+          ...dataBlockInitializerProps,
+          icon: null,
+          title: otherText || t('Other records'),
+          name: 'otherRecords',
+          showAssociationFields: false,
+          onlyCurrentDataSource: false,
+          hideChildrenIfSingleCollection: false,
+          fromOthersInPopup: true,
+          componentType: componentTypeMap[componentName] || componentName,
+          filter({ collection, associationField }) {
+            if (filterOtherRecordsCollection) {
+              return filterOtherRecordsCollection(collection);
+            }
+            return true;
+          },
+          onClick(options) {
+            onClick({ ...options, fromOthersInPopup: true });
+          },
+        },
+      };
+
       let children;
 
+      const _associationRecords = associationFields.length ? associationRecords : null;
       if (noAssociationMenu[0].children.length && associationFields.length) {
-        children = [currentRecord, associationRecords];
-      } else if (noAssociationMenu[0].children.length) {
-        // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
-        if (noAssociationMenu[0].children.length <= 1) {
-          noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
-          return noAssociationMenu;
+        if (hideOtherRecordsInPopup) {
+          children = [currentRecord, _associationRecords];
+        } else {
+          children = [currentRecord, _associationRecords, otherRecords];
         }
-        children = [currentRecord];
+      } else if (noAssociationMenu[0].children.length) {
+        if (hideOtherRecordsInPopup) {
+          // 当可选数据表只有一个时，实现只点击一次区块 menu 就能创建区块
+          if (noAssociationMenu[0].children.length <= 1) {
+            noAssociationMenu[0].children = (noAssociationMenu[0].children[0]?.children as any) || [];
+            return noAssociationMenu;
+          }
+          children = [currentRecord];
+        } else {
+          children = [currentRecord, otherRecords];
+        }
       } else {
-        children = [associationRecords];
+        if (hideOtherRecordsInPopup) {
+          children = [_associationRecords];
+        } else {
+          children = [_associationRecords, otherRecords];
+        }
       }
 
       return [
@@ -956,10 +1021,21 @@ export const useCollectionDataSourceItems = ({
           name: 'records',
           label: t('Records'),
           type: 'subMenu',
-          children,
+          children: children.filter(Boolean),
         },
       ];
-    }, [associationFields, collection.dataSource, collection.name, dataBlockInitializerProps, noAssociationMenu, t]);
+    }, [
+      associationFields,
+      collection.dataSource,
+      collection.name,
+      componentName,
+      dataBlockInitializerProps,
+      filterOtherRecordsCollection,
+      hideOtherRecordsInPopup,
+      noAssociationMenu,
+      onClick,
+      t,
+    ]);
   }
 
   return noAssociationMenu;
@@ -1293,9 +1369,7 @@ export const createTableBlockSchema = (options) => {
                 type: 'void',
                 'x-decorator': 'DndContext',
                 'x-component': 'Space',
-                'x-component-props': {
-                  split: '|',
-                },
+                'x-component-props': {},
                 properties: {},
               },
             },
@@ -1558,7 +1632,6 @@ function useAssociationFields({
         };
       });
   }, [
-    cm,
     collection.fields,
     compile,
     componentName,

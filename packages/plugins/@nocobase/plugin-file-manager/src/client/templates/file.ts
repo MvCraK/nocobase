@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionTemplate, getConfigurableProperties } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
@@ -91,7 +100,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       },
       // 文件的可访问地址
       {
-        interface: 'input',
+        interface: 'url',
         type: 'string',
         name: 'url',
         deletable: false,
@@ -139,6 +148,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       },
     ],
   };
+  presetFieldsDisabled = true;
   configurableProperties = {
     ...getConfigurableProperties('title', 'name'),
     inherits: {

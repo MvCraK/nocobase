@@ -1,5 +1,14 @@
-import winston, { Logger, format } from 'winston';
-import { LoggerOptions, createLogger } from './logger';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import winston, { format } from 'winston';
+import { createLogger, levels, Logger, LoggerOptions } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
 import { getFormat } from './format';
@@ -18,11 +27,12 @@ export type logMethod = (
   },
 ) => SystemLogger;
 
-export interface SystemLogger extends Omit<Logger, 'info' | 'warn' | 'error' | 'debug'> {
+export interface SystemLogger extends Omit<Logger, 'info' | 'warn' | 'error' | 'debug' | 'trace'> {
   info: logMethod;
   warn: logMethod;
   error: logMethod;
   debug: logMethod;
+  trace: logMethod;
 }
 
 class SystemLoggerTransport extends Transport {
@@ -49,20 +59,23 @@ class SystemLoggerTransport extends Transport {
   }
 
   log(info: any, callback: any) {
-    const { level, message, reqId, app, stack, cause, [SPLAT]: args } = info;
+    const { level, message, reqId, app, dataSourceKey, stack, cause, [SPLAT]: args } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
     const { module, submodule, method, ...meta } = args?.[0] || {};
-    logger.log({
-      level,
-      message,
-      stack,
-      meta,
-      module: module || info['module'] || '',
-      submodule: submodule || info['submodule'] || '',
-      method: method || '',
-      app,
-      reqId,
-    });
+    if (!cause?.onlyLogCause) {
+      logger.log({
+        level,
+        message,
+        stack,
+        meta,
+        module: module || info['module'] || '',
+        submodule: submodule || info['submodule'] || '',
+        method: method || '',
+        app,
+        reqId,
+        dataSourceKey: dataSourceKey || 'main',
+      });
+    }
     if (cause) {
       logger.log({
         level,
@@ -73,6 +86,13 @@ class SystemLoggerTransport extends Transport {
       });
     }
     callback(null, true);
+  }
+
+  close() {
+    this.logger.close();
+    if (this.errorLogger) {
+      this.errorLogger.close();
+    }
   }
 }
 
@@ -96,9 +116,16 @@ function child(defaultRequestMetadata: any) {
 }
 
 export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger => {
-  const logger = winston.createLogger({
-    transports: [new SystemLoggerTransport(options)],
+  const transport = new SystemLoggerTransport(options);
+  transport.once('unpipe', () => {
+    transport.close();
   });
+  const logger = winston.createLogger({
+    levels,
+    transports: [transport],
+    // Due to the use of custom log levels,
+    // we have to use the any type until Winston updates the type definitions.
+  }) as any;
 
   // Since error.cause is not supported by child logger of winston
   // we have to use a proxy to rewrite child method

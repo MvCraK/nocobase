@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { AssociationFieldContext } from './context';
-import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useCollection, useCollectionManager } from '../../../data-source/collection';
+import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useSchemaComponentContext } from '../../hooks';
+import { AssociationFieldContext } from './context';
 
 export const AssociationFieldProvider = observer(
   (props) => {
@@ -40,10 +49,6 @@ export const AssociationFieldProvider = observer(
     const [loading, setLoading] = useState(!field.readPretty);
 
     useEffect(() => {
-      if (field.readPretty) {
-        return;
-      }
-
       setLoading(true);
       if (!collectionField) {
         setLoading(false);

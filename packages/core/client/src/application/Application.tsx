@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { define, observable } from '@formily/reactive';
 import { APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
 import merge from 'lodash/merge';
 import set from 'lodash/set';
-import React, { ComponentType, FC, ReactElement } from 'react';
+import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
@@ -60,6 +69,7 @@ export interface ApplicationOptions {
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
   dataSourceManager?: DataSourceManagerOptions;
+  disableAcl?: boolean;
 }
 
 export class Application {
@@ -93,6 +103,9 @@ export class Application {
   get pm() {
     return this.pluginManager;
   }
+  get disableAcl() {
+    return this.options.disableAcl;
+  }
 
   constructor(protected options: ApplicationOptions = {}) {
     this.initRequireJs();
@@ -121,6 +134,9 @@ export class Application {
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
     this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
+    this.i18n.on('languageChanged', (lng) => {
+      this.apiClient.auth.locale = lng;
+    });
   }
 
   private initRequireJs() {
@@ -163,12 +179,29 @@ export class Application {
     return this.options;
   }
 
+  getName() {
+    return getSubAppName(this.getPublicPath()) || null;
+  }
+
   getPublicPath() {
-    return this.options.publicPath || '/';
+    let publicPath = this.options.publicPath || '/';
+    if (!publicPath.endsWith('/')) {
+      publicPath += '/';
+    }
+    return publicPath;
+  }
+
+  getApiUrl(pathname = '') {
+    let baseURL = this.apiClient.axios['defaults']['baseURL'];
+    if (!baseURL.startsWith('http://') && !baseURL.startsWith('https://')) {
+      const { protocol, host } = window.location;
+      baseURL = `${protocol}//${host}${baseURL}`;
+    }
+    return baseURL.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
   }
 
   getRouteUrl(pathname: string) {
-    return this.options.publicPath.replace(/\/$/g, '') + pathname;
+    return this.getPublicPath() + pathname.replace(/^\//g, '');
   }
 
   getCollectionManager(dataSource?: string) {
@@ -279,8 +312,8 @@ export class Application {
     return;
   }
 
-  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T): ReactElement {
-    return React.createElement(this.getComponent(Component), props);
+  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T, children?: ReactNode): ReactElement {
+    return React.createElement(this.getComponent(Component), props, children);
   }
 
   /**
@@ -306,7 +339,9 @@ export class Application {
   }
 
   getRootComponent() {
-    const Root: FC = () => <AppComponent app={this} />;
+    const Root: FC<{ children?: React.ReactNode }> = ({ children }) => (
+      <AppComponent app={this}>{children}</AppComponent>
+    );
     return Root;
   }
 

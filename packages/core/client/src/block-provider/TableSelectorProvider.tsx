@@ -1,16 +1,25 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
+import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
 type Params = {
@@ -52,10 +61,10 @@ export const TableSelectorParamsProvider = ({ params, children }: { params: Para
 };
 
 const InternalTableSelectorProvider = (props) => {
-  const { params, rowKey, extraFilter } = props;
+  const { params, rowKey, extraFilter, expandFlag: propsExpandFlag = false } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  const [expandFlag, setExpandFlag] = useState(false);
+  const [expandFlag, setExpandFlag] = useState(propsExpandFlag);
   const parentRecordData = useCollectionParentRecordData();
   // if (service.loading) {
   //   return <Spin />;
@@ -76,7 +85,7 @@ const InternalTableSelectorProvider = (props) => {
           },
         }}
       >
-        <RenderChildrenWithAssociationFilter {...props} />
+        {props.children}
       </TableSelectorContext.Provider>
     </RecordProvider>
   );
@@ -161,7 +170,7 @@ export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelecto
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable !== false) {
+  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable) {
     params['tree'] = true;
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
@@ -248,11 +257,11 @@ export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelecto
     console.error(err);
   }
 
-  const { filter: parsedFilter } = useParsedFilter({
+  const { filter: parsedFilter, parseVariableLoading } = useParsedFilter({
     filterOption: params?.filter,
   });
 
-  if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {
+  if ((!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) || parseVariableLoading) {
     return null;
   }
 
@@ -309,13 +318,7 @@ export const useTableSelectorProps = () => {
     showIndex: false,
     dragSort: false,
     rowKey: ctx.rowKey || 'id',
-    pagination:
-      ctx?.params?.paginate !== false
-        ? {
-            defaultCurrent: ctx?.params?.page || 1,
-            defaultPageSize: ctx?.params?.pageSize,
-          }
-        : false,
+    pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;

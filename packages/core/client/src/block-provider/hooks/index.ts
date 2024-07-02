@@ -1,39 +1,55 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
+import { evaluators } from '@nocobase/evaluators/client';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
-import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
+import qs from 'qs';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
+  useCollection,
   useCollectionRecord,
-  useDataLoadingMode,
   useDataSourceHeaders,
   useFormActiveFields,
-  useFormBlockContext,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
-import { useFilterBlock } from '../../filter-provider/FilterProvider';
+import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
+import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
+import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
+import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
+import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
+export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
@@ -118,7 +134,7 @@ export function useCollectValuesToSubmit() {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
+  const treeParentRecord = useTreeParentRecord();
 
   return useCallback(async () => {
     const { assignedValues: originalAssignedValues = {}, overwriteValues } = actionSchema?.['x-action-settings'] ?? {};
@@ -157,8 +173,8 @@ export function useCollectValuesToSubmit() {
     const addChild = fieldSchema?.['x-component-props']?.addChild;
     if (addChild) {
       const treeParentField = getTreeParentField();
-      values[treeParentField?.name ?? 'parent'] = omit(currentRecord?.__parent, ['children']);
-      values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
+      values[treeParentField?.name ?? 'parent'] = treeParentRecord;
+      values[treeParentField?.foreignKey ?? 'parentId'] = treeParentRecord?.id;
     }
 
     return {
@@ -168,7 +184,6 @@ export function useCollectValuesToSubmit() {
     };
   }, [
     actionSchema,
-    currentRecord?.__parent,
     field,
     fieldNames,
     fieldSchema,
@@ -180,6 +195,7 @@ export function useCollectValuesToSubmit() {
     localVariables,
     name,
     resource,
+    treeParentRecord,
     variables,
   ]);
 }
@@ -188,7 +204,7 @@ export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const record = useCollectionRecord();
   const form = useForm();
-  const { field, resource, __parent } = useBlockRequestContext();
+  const { field, resource } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
@@ -200,7 +216,6 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
-  const dataLoadingMode = useDataLoadingMode();
 
   return {
     async onClick() {
@@ -372,6 +387,9 @@ export interface FilterTarget {
     /** associated field */
     field?: string;
   }[];
+  /**
+   * 筛选表单区块的 uid
+   */
   uid?: string;
 }
 
@@ -398,21 +416,26 @@ export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets'
   }
 };
 
-export const useFilterBlockActionProps = () => {
+/**
+ * 注意：因为筛选表单的字段有可能设置的有默认值，所以筛选表单的筛选操作会在首次渲染时自动执行一次，
+ * 以确保数据区块中首次显示的数据与筛选表单的筛选条件匹配。
+ * @returns
+ */
+const useDoFilter = () => {
   const form = useForm();
-  const actionField = useField();
-  const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
-  const { name } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getOperators } = useOperators();
+  const fieldSchema = useFieldSchema();
+  const { name } = useCollection();
+  const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
 
-  actionField.data = actionField.data || {};
+  const getFilterFromCurrentForm = useCallback(() => {
+    return removeNullCondition(transformToFilter(form.values, getOperators(), getCollectionJoinField, name));
+  }, [form.values, getCollectionJoinField, getOperators, name]);
 
-  return {
-    async onClick() {
-      const { targets = [], uid } = findFilterTargets(fieldSchema);
-
-      actionField.data.loading = true;
+  const doFilter = useCallback(
+    async ({ doNothingWhenFilterIsEmpty = false } = {}) => {
       try {
         // 收集 filter 的值
         await Promise.all(
@@ -424,16 +447,19 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(
-              transformToFilter(form.values, fieldSchema, getCollectionJoinField, name),
-            );
+            // 由当前表单转换而来的 filter
+            storedFilter[uid] = getFilterFromCurrentForm();
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
               block.defaultFilter,
             ]);
 
-            if (block.dataLoadingMode === 'manual' && _.isEmpty(mergedFilter)) {
+            if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
+              return;
+            }
+
+            if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
 
@@ -450,57 +476,70 @@ export const useFilterBlockActionProps = () => {
       } catch (error) {
         console.error(error);
       }
+    },
+    [getDataBlocks, getFilterFromCurrentForm, targets, uid],
+  );
+
+  // 这里的代码是为了实现：筛选表单的筛选操作在首次渲染时自动执行一次
+  useEffect(() => {
+    doFilter({ doNothingWhenFilterIsEmpty: true });
+  }, [getDataBlocks().length]);
+
+  return {
+    /**
+     * 用于执行筛选表单的筛选操作
+     */
+    doFilter,
+    /**
+     * 根据当前表单的值获取 filter
+     */
+    getFilterFromCurrentForm,
+  };
+};
+
+export const useFilterBlockActionProps = () => {
+  const { doFilter } = useDoFilter();
+  const actionField = useField();
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      actionField.data.loading = true;
+      await doFilter();
       actionField.data.loading = false;
     },
   };
 };
 
-export const useResetBlockActionProps = () => {
+const useDoReset = () => {
   const form = useForm();
-  const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { targets, uid } = findFilterTargets(fieldSchema);
+  const { doFilter, getFilterFromCurrentForm } = useDoFilter();
+
+  return {
+    doReset: async () => {
+      await form.reset();
+      if (_.isEmpty(getFilterFromCurrentForm())) {
+        return doReset({ getDataBlocks, targets, uid });
+      }
+      await doFilter();
+    },
+  };
+};
+
+export const useResetBlockActionProps = () => {
+  const actionField = useField();
+  const { doReset } = useDoReset();
 
   actionField.data = actionField.data || {};
 
   return {
     async onClick() {
-      const { targets, uid } = findFilterTargets(fieldSchema);
-
-      form.reset();
       actionField.data.loading = true;
-      try {
-        // 收集 filter 的值
-        await Promise.all(
-          getDataBlocks().map(async (block) => {
-            const target = targets.find((target) => target.uid === block.uid);
-            if (!target) return;
-
-            if (block.dataLoadingMode === 'manual') {
-              return block.clearData();
-            }
-
-            const param = block.service.params?.[0] || {};
-            // 保留原有的 filter
-            const storedFilter = block.service.params?.[1]?.filters || {};
-
-            delete storedFilter[uid];
-            const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
-
-            return block.doFilter(
-              {
-                ...param,
-                page: 1,
-                filter: mergedFilter,
-              },
-              { filters: storedFilter },
-            );
-          }),
-        );
-        actionField.data.loading = false;
-      } catch (error) {
-        actionField.data.loading = false;
-      }
+      await doReset();
+      actionField.data.loading = false;
     },
   };
 };
@@ -1014,13 +1053,13 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
-      * {
-        margin: 0;
-      }
-      :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-        overflow: hidden; height: 0;
-      }
-    }`,
+       * {
+         margin: 0;
+       }
+       :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+         overflow: hidden; height: 0;
+       }
+     }`,
   });
   return {
     async onClick() {
@@ -1044,7 +1083,7 @@ export const useBulkDestroyActionProps = () => {
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
       const totalPage = service.data?.meta?.totalPage;
-      if (currentPage === totalPage) {
+      if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
         service.params[0].page = currentPage - 1;
       }
       if (callBack) {
@@ -1298,6 +1337,52 @@ export const useAssociationFilterBlockProps = () => {
     labelKey,
   };
 };
+async function doReset({
+  getDataBlocks,
+  targets,
+  uid,
+}: {
+  getDataBlocks: () => DataBlock[];
+  targets: {
+    /** field uid */
+    uid: string;
+    /** associated field */
+    field?: string;
+  }[];
+  uid: string;
+}) {
+  try {
+    await Promise.all(
+      getDataBlocks().map(async (block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        if (block.dataLoadingMode === 'manual') {
+          return block.clearData();
+        }
+
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        delete storedFilter[uid];
+        const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      }),
+    );
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 export function getAssociationPath(str) {
   const lastIndex = str.lastIndexOf('.');
   if (lastIndex !== -1) {
@@ -1353,7 +1438,12 @@ export const useAssociationNames = (dataSource?: string) => {
           appends.add(path);
           appends.add(`${path}.parent` + '(recursively=true)');
         } else {
-          appends.add(path);
+          if (s['x-component-props']?.sortArr) {
+            const sort = s['x-component-props']?.sortArr;
+            appends.add(`${path}(sort=${sort})`);
+          } else {
+            appends.add(path);
+          }
         }
         if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
@@ -1430,4 +1520,140 @@ async function resetFormCorrectly(form: Form) {
     });
   });
   await form.reset();
+}
+
+export function appendQueryStringToUrl(url: string, queryString: string) {
+  if (queryString) {
+    return url + (url.includes('?') ? '&' : '?') + queryString;
+  }
+  return url;
+}
+
+export function useLinkActionProps() {
+  const navigate = useNavigate();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const url = fieldSchema?.['x-component-props']?.['url'];
+  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+
+  return {
+    type: 'default',
+    async onClick() {
+      if (!url) {
+        message.warning(t('Please configure the URL'));
+        return;
+      }
+      const queryString = await parseVariablesAndChangeParamsToQueryString({
+        searchParams,
+        variables,
+        localVariables,
+        replaceVariableValue,
+      });
+      const targetUrl = await replaceVariableValue(url, variables, localVariables);
+      const link = appendQueryStringToUrl(targetUrl, queryString);
+      if (link) {
+        if (isURL(link)) {
+          window.open(link, '_blank');
+        } else {
+          navigate(link);
+        }
+      }
+    },
+  };
+}
+
+export async function replaceVariableValue(
+  url: string,
+  variables: VariablesContextType,
+  localVariables: VariableOption[],
+) {
+  if (!url) {
+    return;
+  }
+  const { evaluate } = evaluators.get('string');
+  // 解析如 `{{$user.name}}` 之类的变量
+  const { exp, scope: expScope } = await replaceVariables(url, {
+    variables,
+    localVariables,
+  });
+
+  try {
+    const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+    return result;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function parseVariablesAndChangeParamsToQueryString({
+  searchParams,
+  variables,
+  localVariables,
+  replaceVariableValue,
+}: {
+  searchParams: { name: string; value: any }[];
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+  replaceVariableValue: (
+    url: string,
+    variables: VariablesContextType,
+    localVariables: VariableOption[],
+  ) => Promise<any>;
+}) {
+  const parsed = await Promise.all(
+    searchParams.map(async ({ name, value }) => {
+      if (typeof value === 'string') {
+        if (isVariable(value)) {
+          const result = await variables.parseVariable(value, localVariables);
+          return { name, value: result };
+        }
+        const result = await replaceVariableValue(value, variables, localVariables);
+        return { name, value: result };
+      }
+      return { name, value };
+    }),
+  );
+
+  const params = {};
+
+  for (const { name, value } of parsed) {
+    if (name && value) {
+      params[name] = reduceValueSize(value);
+    }
+  }
+
+  return qs.stringify(params);
+}
+
+/**
+ * 1. 去除 value 是一个对象或者数组的 key
+ * 2. 去除 value 是一个字符串长度超过 100 个字符的 key
+ */
+export function reduceValueSize(value: any) {
+  if (_.isPlainObject(value)) {
+    const result = {};
+    Object.keys(value).forEach((key) => {
+      if (_.isPlainObject(value[key]) || _.isArray(value[key])) {
+        return;
+      }
+      if (_.isString(value[key]) && value[key].length > 100) {
+        return;
+      }
+      result[key] = value[key];
+    });
+    return result;
+  }
+
+  if (_.isArray(value)) {
+    return value.map((item) => {
+      if (_.isPlainObject(item) || _.isArray(item)) {
+        return reduceValueSize(item);
+      }
+      return item;
+    });
+  }
+
+  return value;
 }

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { SchemaComponent, useAPIClient, useCurrentUserContext } from '@nocobase/client';
 import React, { useCallback } from 'react';
@@ -47,7 +56,7 @@ const passwordForm: ISchema = {
             return t("Please enter a valid email");
           }
         } else {
-          return /^[^@.<>"'/]{2,16}$/.test(value) || t("Please enter a valid username");
+          return /^[^@.<>"'/]{1,50}$/.test(value) || t("Please enter a valid username");
         }
       }}}`,
       'x-decorator': 'FormItem',
@@ -94,7 +103,7 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
   const signUpPages = useSignUpForms();
-  const allowSignUp = !!signUpPages[authType] && options?.allowSignUp;
+  const allowSignUp = signUpPages[authType] && options?.allowSignUp ? true : false;
   const signUpLink = `/signup?name=${name}`;
 
   const useBasicSignIn = () => {

@@ -1,6 +1,14 @@
-import React from 'react';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
 
-import { ActionInitializer } from './ActionInitializer';
+import React from 'react';
+import { ActionInitializerItem } from './ActionInitializerItem';
 
 export const SubmitActionInitializer = (props) => {
   const schema = {
@@ -15,5 +23,5 @@ export const SubmitActionInitializer = (props) => {
       htmlType: 'submit',
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

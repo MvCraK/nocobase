@@ -1,6 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
 
-import { useFindComponent } from '../../../schema-component';
+import { useFieldComponentName } from '../../../common/useFieldComponentName';
+import { ErrorFallback, useFindComponent } from '../../../schema-component';
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsCascaderItem,
@@ -15,9 +25,9 @@ import {
   SchemaSettingsSwitchItem,
   useSchemaSettings,
 } from '../../../schema-settings/SchemaSettings';
-import { SchemaSettingItemContext } from '../context';
+import { SchemaSettingItemContext } from '../context/SchemaSettingItemContext';
 import { SchemaSettingsItemType } from '../types';
-import { useFieldComponentName } from '../../../common/useFieldComponentName';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 
 export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];
@@ -35,6 +45,19 @@ const typeComponentMap = {
   popup: SchemaSettingsPopupItem,
   actionModal: SchemaSettingsActionModalItem,
   modal: SchemaSettingsModalItem,
+};
+
+const SchemaSettingsChildErrorFallback: FC<
+  FallbackProps & {
+    title: string;
+  }
+> = (props) => {
+  const { title, ...fallbackProps } = props;
+  return (
+    <SchemaSettingsItem title={title}>
+      <ErrorFallback.Modal {...fallbackProps} />
+    </SchemaSettingsItem>
+  );
 };
 
 export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) => {
@@ -61,7 +84,15 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
           // 两次渲染之间 props 可能发生变化，就可能报 hooks 调用顺序的错误。所以这里使用 fieldComponentName 和 item.name 拼成
           // 一个不会重复的 key，保证每次渲染都是新的组件。
           const key = `${fieldComponentName ? fieldComponentName + '-' : ''}${item.name}`;
-          return <SchemaSettingsChild key={key} {...item} />;
+          return (
+            <ErrorBoundary
+              key={key}
+              FallbackComponent={(props) => <SchemaSettingsChildErrorFallback {...props} title={key} />}
+              onError={(err) => console.log(err)}
+            >
+              <SchemaSettingsChild {...item} />
+            </ErrorBoundary>
+          );
         })}
     </>
   );
@@ -78,7 +109,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
     type,
     Component,
     children,
-    hideIfNoChildren = true,
+    hideIfNoChildren,
     componentProps,
   } = props as any;
   const useChildrenRes = useChildren();
@@ -100,7 +131,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
   if (!C) {
     return null;
   }
-  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && !componentChildren) {
     return null;
   }
 

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Model, Repository } from '@nocobase/database';
@@ -37,16 +46,17 @@ export async function setCurrentRole(ctx: Context, next) {
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
 
+  let role: string | undefined;
   // 1. If the X-Role is set, use the specified role
   if (currentRole) {
-    ctx.state.currentRole = userRoles.find((role) => role.name === currentRole)?.name;
+    role = userRoles.find((role) => role.name === currentRole)?.name;
   }
-  // 2. If the X-Role is not set, use the default role
-  else {
+  // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
+  if (!role) {
     const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
-    ctx.state.currentRole = (defaultRole || userRoles[0])?.name;
+    role = (defaultRole || userRoles[0])?.name;
   }
-
+  ctx.state.currentRole = role;
   if (!ctx.state.currentRole) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',

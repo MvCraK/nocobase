@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Form } from '@formily/core';
 // @ts-ignore
 import { Schema } from '@formily/json-schema';
@@ -58,6 +67,10 @@ type Props = {
    * @returns
    */
   returnScope?: (scope: Option[]) => any[];
+  /**
+   * 不需要禁用选项，一般会在表达式中使用
+   */
+  noDisabled?: boolean;
 };
 
 /**
@@ -82,6 +95,7 @@ export const VariableInput = (props: Props) => {
     record,
     returnScope = _.identity,
     targetFieldSchema,
+    noDisabled,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -94,6 +108,7 @@ export const VariableInput = (props: Props) => {
     operator,
     uiSchema,
     targetFieldSchema,
+    noDisabled,
   });
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
   const { compatOldVariables } = useCompatOldVariables({
@@ -182,12 +197,12 @@ export const getShouldChange = ({
     if (['o2o', 'o2m', 'oho'].includes(collectionFieldOfVariable?.interface)) {
       return false;
     }
-    if (!collectionField.target && collectionFieldOfVariable?.target) {
-      return false;
-    }
-    if (collectionField.target && !collectionFieldOfVariable?.target) {
-      return false;
-    }
+    // if (!collectionField.target && collectionFieldOfVariable?.target) {
+    //   return false;
+    // }
+    // if (collectionField.target && !collectionFieldOfVariable?.target) {
+    //   return false;
+    // }
     if (
       collectionField.target &&
       collectionFieldOfVariable?.target &&
@@ -248,7 +263,7 @@ export function useCompatOldVariables(props: {
         return variables;
       }
 
-      variables = _.cloneDeep(variables);
+      variables = [...variables];
 
       const systemVariable: Option = {
         value: '$system',

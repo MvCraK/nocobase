@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
@@ -9,9 +18,7 @@ import {
   DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
-  useCollectionManager,
   useCollectionParentRecord,
-  useCollectionParentRecordData,
   useCollectionRecord,
   useDataBlockProps,
   useDataBlockRequest,
@@ -26,6 +33,7 @@ import {
   useCollection_deprecated,
 } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
+import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
@@ -133,9 +141,8 @@ export const useBlockRequestContext = () => {
 };
 
 /**
- * @internal
- * @param props
- * @returns
+ * @deprecated
+ * 废弃组件，不建议使用
  */
 export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
@@ -196,7 +203,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 /**
  * @internal
  */
-const BlockContext = createContext<{
+export const BlockContext = createContext<{
   /** 用以区分区块的标识 */
   name: string;
 }>(null);
@@ -319,20 +326,10 @@ export const useSourceIdFromRecord = () => {
 
 /**
  * @deprecated
- * @returns
+ * use `useSourceId` instead
  */
 export const useSourceIdFromParentRecord = () => {
-  const cm = useCollectionManager();
-  const parentRecordData = useCollectionParentRecordData();
-  const { getCollectionField } = useCollectionManager_deprecated();
-  const association = useBlockAssociationContext();
-  if (association) {
-    const collectionField = getCollectionField(association);
-    const collection = cm.getCollection(collectionField.collectionName);
-    return parentRecordData?.[
-      collectionField.sourceKey || collection.filterTargetKey || collection.getPrimaryKey() || 'id'
-    ];
-  }
+  return useSourceId();
 };
 
 /**

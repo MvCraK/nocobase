@@ -1,9 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useBulkDestroyActionProps, useDestroyActionProps, useUpdateActionProps } from '../../block-provider/hooks';
 import { uiSchemaTemplatesCollection } from '../collections/uiSchemaTemplates';
 import { CollectionTitle } from './CollectionTitle';
 import { useBlockRequestContext } from '../../block-provider';
+import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
 
 const useUpdateSchemaTemplateActionProps = () => {
   const props = useUpdateActionProps();
@@ -18,11 +28,13 @@ const useUpdateSchemaTemplateActionProps = () => {
 
 const useBulkDestroyTemplateProps = () => {
   const props = useBulkDestroyActionProps();
+  const bm = useSchemaTemplateManager();
   const { service } = useBlockRequestContext();
 
   return {
     async onClick() {
       await props.onClick();
+      await bm.refresh();
       service?.refresh?.();
     },
   };
@@ -31,9 +43,11 @@ const useBulkDestroyTemplateProps = () => {
 const useDestroyTemplateProps = () => {
   const props = useDestroyActionProps();
   const { service } = useBlockRequestContext();
+  const bm = useSchemaTemplateManager();
   return {
     async onClick() {
       await props.onClick();
+      await bm.refresh();
       service?.refresh?.();
     },
   };

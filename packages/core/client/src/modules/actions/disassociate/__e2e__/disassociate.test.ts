@@ -1,4 +1,13 @@
-import { test, expect } from '@nocobase/test/e2e';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { expect, test } from '@nocobase/test/e2e';
 import { disassociatePage } from './templatesOfPage';
 
 test('basic', async ({ page, mockPage, mockRecord }) => {
@@ -26,7 +35,7 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
     .hover();
   await page
     .getByTestId('drawer-Action.Container-collection1-Edit record')
-    .getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-collection2')
+    .getByLabel('designer-schema-initializer-TableV2.Column-fieldSettings:TableColumn-collection2')
     .hover();
   await page.getByRole('menuitem', { name: 'Disassociate' }).click();
 

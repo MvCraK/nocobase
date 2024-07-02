@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Form } from '@formily/core';
 import { useMemo } from 'react';
 import { useCollection_deprecated } from '../../collection-manager';
@@ -5,7 +14,9 @@ import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/us
 import { useDatetimeVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
 import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
 import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useParentPopupVariable } from '../../schema-settings/VariableInput/hooks/useParentPopupVariable';
 import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
+import { usePopupVariable } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
 import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
 
@@ -17,7 +28,21 @@ interface Props {
 const useLocalVariables = (props?: Props) => {
   const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
   const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
-  const { currentParentRecordCtx, collectionName: collectionNameOfParentRecord } = useCurrentParentRecordVariable();
+  const {
+    currentParentRecordCtx,
+    collectionName: collectionNameOfParentRecord,
+    dataSource: currentParentRecordDataSource,
+  } = useCurrentParentRecordVariable();
+  const {
+    popupRecordCtx,
+    collectionName: collectionNameOfPopupRecord,
+    dataSource: popupDataSource,
+  } = usePopupVariable();
+  const {
+    parentPopupRecordCtx,
+    collectionName: collectionNameOfParentPopupRecord,
+    dataSource: parentPopupDataSource,
+  } = useParentPopupVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
@@ -66,6 +91,19 @@ const useLocalVariables = (props?: Props) => {
           name: '$nParentRecord',
           ctx: currentParentRecordCtx,
           collectionName: collectionNameOfParentRecord,
+          dataSource: currentParentRecordDataSource,
+        },
+        {
+          name: '$nPopupRecord',
+          ctx: popupRecordCtx,
+          collectionName: collectionNameOfPopupRecord,
+          dataSource: popupDataSource,
+        },
+        {
+          name: '$nParentPopupRecord',
+          ctx: parentPopupRecordCtx,
+          collectionName: collectionNameOfParentPopupRecord,
+          dataSource: parentPopupDataSource,
         },
         {
           name: '$nForm',
@@ -98,6 +136,10 @@ const useLocalVariables = (props?: Props) => {
     currentFormCtx,
     currentParentRecordCtx,
     collectionNameOfParentRecord,
+    currentParentRecordDataSource,
+    popupRecordCtx,
+    collectionNameOfPopupRecord,
+    popupDataSource,
     datetimeCtx,
     shouldDisplayCurrentObject,
     currentObjectCtx,

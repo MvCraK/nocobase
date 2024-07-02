@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback, useMemo } from 'react';
 
@@ -79,10 +88,9 @@ export function useCreateAssociationFormBlock() {
 
   const templateWrap = useCallback(
     (templateSchema, { item }) => {
-      const field = item.associationField;
-      const collection = getCollection(field.target);
-
-      if (item.template.componentName === 'FormItem') {
+      if (item.template.componentName === 'FormItem' && item.associationField) {
+        const field = item.associationField;
+        const collection = getCollection(field.target);
         const blockSchema = createCreateFormBlockUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,

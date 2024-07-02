@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Input, Select } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../block-provider';
+import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useRecord } from '../../record-provider';
 import { Variable } from '.././../schema-component';
 import { useCompatOldVariables } from '../VariableInput/VariableInput';
@@ -62,20 +71,19 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     [collectionName, mode, setValue],
   );
   const textAreaStyle = useMemo(() => {
-    return { minWidth: 460, marginRight: 15 };
+    return { minWidth: 460 };
   }, []);
   const compatScope = useMemo(() => {
     return compatOldVariables(scope, {
       value: fieldValue?.value,
     });
   }, [compatOldVariables, fieldValue?.value, scope]);
-
   const modeMap = {
     // 常量
     constant: (
       <div role="button" aria-label="dynamic-component-linkage-rules" style={constantStyle}>
         {React.createElement(DynamicComponent, {
-          value: fieldValue?.value || fieldValue,
+          value: fieldValue?.value,
           schema,
           onChange: handleChangeOfConstant,
         })}

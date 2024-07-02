@@ -1,4 +1,13 @@
-import React, { useCallback, useMemo } from 'react';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React, { useCallback, useMemo, useState } from 'react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
@@ -24,6 +33,7 @@ export function AddButton(props: AddButtonProps) {
   const { workflow, refresh } = useFlowContext() ?? {};
   const instructionList = Array.from(engine.instructions.getValues()) as Instruction[];
   const { styles } = useStyles();
+  const [creating, setCreating] = useState(false);
 
   const groups = useMemo(() => {
     return [
@@ -65,25 +75,32 @@ export function AddButton(props: AddButtonProps) {
   const onCreate = useCallback(
     async ({ keyPath }) => {
       const type = keyPath.pop();
-      const config = {};
       const [optionKey] = keyPath;
       const instruction = engine.instructions.get(type);
+      const config = instruction.createDefaultConfig();
       if (optionKey) {
         const { value } = instruction.options?.find((item) => item.key === optionKey) ?? {};
         Object.assign(config, typeof value === 'function' ? value() : value);
       }
 
       if (workflow) {
-        await api.resource('workflows.nodes', workflow.id).create({
-          values: {
-            type,
-            upstreamId: upstream?.id ?? null,
-            branchIndex,
-            title: compile(instruction.title),
-            config,
-          },
-        });
-        refresh();
+        setCreating(true);
+        try {
+          await api.resource('workflows.nodes', workflow.id).create({
+            values: {
+              type,
+              upstreamId: upstream?.id ?? null,
+              branchIndex,
+              title: compile(instruction.title),
+              config,
+            },
+          });
+          refresh();
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setCreating(false);
+        }
       }
     },
     [api, branchIndex, engine.instructions, refresh, upstream?.id, workflow],
@@ -113,7 +130,12 @@ export function AddButton(props: AddButtonProps) {
           }
         `}
       >
-        <Button aria-label={props['aria-label'] || 'add-button'} shape="circle" icon={<PlusOutlined />} />
+        <Button
+          aria-label={props['aria-label'] || 'add-button'}
+          shape="circle"
+          icon={<PlusOutlined />}
+          loading={creating}
+        />
       </Dropdown>
     </div>
   );

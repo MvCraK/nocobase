@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 
@@ -7,6 +16,7 @@ export interface CreateFormBlockUISchemaOptions {
   collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
+  /** 表示是通过 Other collections 选项创建的区块（由于历史遗留问题，这里的命名暂不做更改） */
   isCusomeizeCreate?: boolean;
 }
 
@@ -17,7 +27,6 @@ export interface CreateFormBlockUISchemaOptions {
 export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOptions): ISchema {
   const { collectionName, association, dataSource, templateSchema, isCusomeizeCreate } = options;
   const resourceName = association || collectionName;
-
   if (!dataSource) {
     throw new Error('dataSource are required');
   }
@@ -57,9 +66,6 @@ export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOp
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
-              style: {
-                marginTop: 24,
-              },
             },
           },
         },

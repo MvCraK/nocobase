@@ -1,11 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { TableOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 
-import { useCollectionManager_deprecated } from '../../collection-manager';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManager_deprecated } from '../../collection-manager';
+import { createGridCardBlockUISchema } from '../../modules/blocks/data-blocks/grid-card/createGridCardBlockUISchema';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
-import { createGridCardBlockSchema } from '../../modules/blocks/data-blocks/grid-card/createGridCardBlockSchema';
 
 /**
  * @deprecated
@@ -30,7 +39,7 @@ export const RecordAssociationGridCardBlockInitializer = () => {
           insert(s);
         } else {
           insert(
-            createGridCardBlockSchema({
+            createGridCardBlockUISchema({
               rowKey: collection.filterTargetKey,
               dataSource: collection.dataSource,
               association: resource,
@@ -53,7 +62,7 @@ export function useCreateAssociationGridCardBlock() {
       const collection = getCollection(field.target);
 
       insert(
-        createGridCardBlockSchema({
+        createGridCardBlockUISchema({
           rowKey: collection.filterTargetKey,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,

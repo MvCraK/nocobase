@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import lodash from 'lodash';
@@ -6,7 +15,8 @@ import { FieldOption } from './hooks';
 import { QueryProps } from './renderer';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
-  const { collection } = decoratorProps;
+  const { collection, config } = decoratorProps;
+  const { title, bordered } = config || {};
   return {
     type: 'void',
     'x-decorator': 'ChartRendererProvider',
@@ -16,6 +26,8 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',
+      title,
+      bordered,
     },
     'x-initializer': 'charts:addBlock',
     properties: {
@@ -78,6 +90,9 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
     if (!options || !Array.isArray(options)) {
       return value;
     }
+    if (Array.isArray(value)) {
+      return value.map((v) => parseEnum(field, v));
+    }
     const option = options.find((option) => option.value === value);
     return Schema.compile(option?.label || value, scope);
   };
@@ -92,6 +107,7 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
       switch (field.interface) {
         case 'select':
         case 'radioGroup':
+        case 'multipleSelect':
           processed[key] = parseEnum(field, value);
           break;
         default:

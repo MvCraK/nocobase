@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import lodash from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { CollectionOptions } from '@nocobase/client';
@@ -50,7 +59,7 @@ export const getChildrenCollections = (collections, name) => {
 };
 export const formatData = (data) => {
   const edgeData = [];
-  const targetTablekeys = [];
+  const targetTableKeys = [];
 
   const tableData = data.map((item) => {
     const ports = [];
@@ -79,7 +88,7 @@ export const formatData = (data) => {
       ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(field.interface) && edgeData.push(field);
     });
 
-    targetTablekeys.push(item.name);
+    targetTableKeys.push(item.name);
     const portsData = formatPortData(ports);
     return {
       id: item.name,
@@ -92,7 +101,7 @@ export const formatData = (data) => {
       item: item,
     };
   });
-  const edges = formatRelationEdgeData(edgeData, targetTablekeys, tableData);
+  const edges = formatRelationEdgeData(edgeData, targetTableKeys, tableData);
   const inheritEdges = formatInheritEdgeData(data);
   return { nodesData: tableData, edgesData: edges, inheritEdges };
 };

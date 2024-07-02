@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
@@ -17,22 +26,20 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
       type: 'array',
       // title,
       'x-component': 'Upload.Attachment',
-      'x-component-props': {},
+      'x-use-component-props': 'useAttachmentFieldProps',
     },
   };
   availableTypes = ['belongsToMany'];
   schemaInitialize(schema: ISchema, { block, field }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['size'] = 'small';
-    }
-
     if (!schema['x-component-props']) {
       schema['x-component-props'] = {};
     }
-    schema['x-component-props']['action'] = `${field.target}:create${
-      field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
-    }`;
+
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props']['size'] = 'small';
+    }
+
+    schema['x-use-component-props'] = 'useAttachmentFieldProps';
   }
   initialize(values: any) {
     if (!values.through) {
@@ -57,9 +64,11 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
       type: 'string',
       title: `{{t("MIME type", { ns: "${NAMESPACE}" })}}`,
       'x-component': 'Input',
+      'x-component-props': {
+        placeholder: 'image/*',
+      },
       'x-decorator': 'FormItem',
       description: 'Example: image/png',
-      default: 'image/*',
     },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',

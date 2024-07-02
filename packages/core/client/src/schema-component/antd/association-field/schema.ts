@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export default {
   Nester: {
     type: 'void',
@@ -23,7 +32,10 @@ export default {
         type: 'void',
         'x-component': 'Tabs',
         'x-component-props': {},
-        'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+        'x-initializer': 'popup:addTab',
+        'x-initializer-props': {
+          gridInitializer: 'popup:addNew:addBlock',
+        },
         properties: {
           tab1: {
             type: 'void',
@@ -98,7 +110,7 @@ export default {
         type: 'void',
         'x-component': 'Tabs',
         'x-component-props': {},
-        'x-initializer': 'TabPaneInitializers',
+        'x-initializer': 'popup:addTab',
         properties: {
           tab1: {
             type: 'void',

@@ -1,14 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollection } from '../../../../data-source';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
-import { useFieldComponentName } from './utils';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
 
 export const tableColumnSettings = new SchemaSettings({
@@ -113,12 +123,15 @@ export const tableColumnSettings = new SchemaSettings({
           name: 'sortable',
           type: 'switch',
           useVisible() {
+            const collection = useCollection();
             const { collectionField } = useColumnSchema();
             const { getInterface } = useCollectionManager_deprecated();
             const interfaceCfg = getInterface(collectionField?.interface);
             const { currentMode } = useAssociationFieldContext();
 
-            return interfaceCfg?.sortable === true && !currentMode;
+            return (
+              interfaceCfg?.sortable === true && !currentMode && collection?.name === collectionField?.collectionName
+            );
           },
           useComponentProps() {
             const field: any = useField();
@@ -151,7 +164,12 @@ export const tableColumnSettings = new SchemaSettings({
           name: 'setDefaultValue',
           useVisible() {
             const { fieldSchema } = useColumnSchema();
-            return !fieldSchema['x-read-pretty'];
+
+            if (!fieldSchema) {
+              return false;
+            }
+
+            return !fieldSchema?.['x-read-pretty'];
           },
           Component: SchemaSettingsDefaultValue as any,
           useComponentProps() {
@@ -167,6 +185,11 @@ export const tableColumnSettings = new SchemaSettings({
           useVisible() {
             const { uiSchema, fieldSchema } = useColumnSchema();
             const field: any = useField();
+
+            if (!fieldSchema) {
+              return false;
+            }
+
             const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
             return isSubTableColumn && !field.readPretty && !uiSchema?.['x-read-pretty'];
           },
@@ -179,8 +202,12 @@ export const tableColumnSettings = new SchemaSettings({
             return {
               key: 'required',
               title: t('Required'),
-              checked: fieldSchema.required as boolean,
+              checked: fieldSchema?.required as boolean,
               onChange: (required) => {
+                if (!fieldSchema) {
+                  return console.error('fieldSchema is required');
+                }
+
                 const schema = {
                   ['x-uid']: fieldSchema['x-uid'],
                 };
@@ -204,6 +231,11 @@ export const tableColumnSettings = new SchemaSettings({
           useVisible() {
             const { fieldSchema, collectionField } = useColumnSchema();
             const field: any = useField();
+
+            if (!fieldSchema) {
+              return false;
+            }
+
             const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
             return (
               isSubTableColumn &&
@@ -218,6 +250,11 @@ export const tableColumnSettings = new SchemaSettings({
             const { t } = useTranslation();
             const { dn } = useDesignable();
             let readOnlyMode = 'editable';
+
+            if (!fieldSchema) {
+              return console.error('fieldSchema is required') as any;
+            }
+
             if (fieldSchema['x-disabled'] === true) {
               readOnlyMode = 'readonly';
             }
@@ -283,6 +320,39 @@ export const tableColumnSettings = new SchemaSettings({
             };
           },
         },
+        {
+          name: 'fixed',
+          type: 'select',
+          useComponentProps() {
+            const { t } = useTranslation();
+            const field = useField();
+            const fieldSchema = useFieldSchema();
+            const { dn } = useDesignable();
+            return {
+              title: t('Fixed'),
+              options: [
+                { label: t('Not fixed'), value: 'none' },
+                { label: t('Left fixed'), value: 'left' },
+                { label: t('Right fixed'), value: 'right' },
+              ],
+              value: field.componentProps?.fixed || 'none',
+              onChange(fixed) {
+                const schema = {
+                  ['x-uid']: fieldSchema['x-uid'],
+                };
+                fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                fieldSchema['x-component-props']['fixed'] = fixed;
+                schema['x-component-props'] = fieldSchema['x-component-props'];
+                field.componentProps = field.componentProps || {};
+                field.componentProps.fixed = fixed;
+                void dn.emit('patch', {
+                  schema,
+                });
+                dn.refresh();
+              },
+            };
+          },
+        },
       ],
     },
     {
@@ -325,7 +395,7 @@ export const tableColumnSettings = new SchemaSettings({
         const { t } = useTranslation();
 
         return {
-          removeParentsIfNoChildren: true,
+          removeParentsIfNoChildren: false,
           confirm: {
             title: t('Delete field'),
           },

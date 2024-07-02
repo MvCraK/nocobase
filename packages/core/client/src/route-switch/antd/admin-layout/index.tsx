@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -13,6 +22,7 @@ import {
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
+  RouteSchemaComponent,
   SchemaComponent,
   findByUid,
   findMenuItem,
@@ -27,6 +37,7 @@ import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { Help } from '../../../user/Help';
 import { VariablesProvider } from '../../../variables';
+import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;
@@ -66,16 +77,20 @@ const useMenuProps = () => {
 const MenuEditor = (props) => {
   const { notification } = App.useApp();
   const [hasNotice, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
-  const { setTitle } = useDocumentTitle();
+  const { t } = useMenuTranslation();
+  const { setTitle: _setTitle } = useDocumentTitle();
+  const setTitle = useCallback((title) => _setTitle(t(title)), []);
   const navigate = useNavigate();
   const params = useParams<any>();
   const location = useLocation();
   const isMatchAdmin = useMatch('/admin');
   const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
+  const isDynamicPage = !!defaultSelectedUid;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
+
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
@@ -107,7 +122,7 @@ const MenuEditor = (props) => {
         }
 
         // url 不为 `/admin/xxx` 的情况，不做处理
-        if (!isMatchAdminName) return;
+        if (!isMatchAdminName || !isDynamicPage) return;
 
         // url 为 `admin/xxx` 的情况
         const s = findByUid(schema, defaultSelectedUid);
@@ -125,18 +140,6 @@ const MenuEditor = (props) => {
       },
     },
   );
-
-  const match = useMatch('/admin/:name');
-
-  useEffect(() => {
-    if (match) {
-      const schema = filterByACL(data?.data, ctx);
-      const s = findByUid(schema, defaultSelectedUid);
-      if (s) {
-        setTitle(s.title);
-      }
-    }
-  }, [data?.data, location.pathname, defaultSelectedUid]);
 
   useEffect(() => {
     const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
@@ -160,6 +163,15 @@ const MenuEditor = (props) => {
     }
     return s;
   }, [data?.data]);
+
+  useEffect(() => {
+    if (isMatchAdminName) {
+      const s = findByUid(schema, defaultSelectedUid);
+      if (s) {
+        setTitle(s.title);
+      }
+    }
+  }, [defaultSelectedUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
 
   useRequest(
     {
@@ -304,6 +316,11 @@ const AdminSideBar = ({ sideMenuRef }) => {
       ref={sideMenuRef}
     ></Layout.Sider>
   );
+};
+
+export const AdminDynamicPage = () => {
+  const params = useParams<{ name?: string }>();
+  return <RouteSchemaComponent schema={params.name} />;
 };
 
 export const InternalAdminLayout = () => {
@@ -496,6 +513,6 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
-    this.app.addComponents({ AdminLayout });
+    this.app.addComponents({ AdminLayout, AdminDynamicPage });
   }
 }

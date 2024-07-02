@@ -1,4 +1,13 @@
-import { createListBlockSchema } from '../createListBlockSchema';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createListBlockUISchema } from '../createListBlockUISchema';
 
 describe('createListBlockSchema', () => {
   test('should return the correct schema', () => {
@@ -20,7 +29,7 @@ describe('createListBlockSchema', () => {
       rowKey: 'id',
     };
 
-    const schema = createListBlockSchema(options);
+    const schema = createListBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
       {

@@ -1,12 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { MapBlockOptions } from './block';
 import { mapActionInitializers, mapActionInitializers_deprecated } from './block/MapActionInitializers';
 import { mapBlockSettings } from './block/MapBlock.Settings';
+import { useMapBlockProps } from './block/MapBlockProvider';
 import { Configuration, Map } from './components';
 import { fields } from './fields';
+import { fieldSettingsComponentMap } from './fields/fieldSettingsComponentMap';
 import { NAMESPACE, generateNTemplate } from './locale';
-import { useMapBlockProps } from './block/MapBlockProvider';
 const MapProvider = React.memo((props) => {
   return (
     <SchemaComponentOptions components={{ Map }}>
@@ -16,7 +26,7 @@ const MapProvider = React.memo((props) => {
 });
 MapProvider.displayName = 'MapProvider';
 
-export class MapPlugin extends Plugin {
+export class PluginMapClient extends Plugin {
   async load() {
     this.app.use(MapProvider);
 
@@ -30,6 +40,7 @@ export class MapPlugin extends Plugin {
     this.app.schemaInitializerManager.add(mapActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(mapActionInitializers);
     this.schemaSettingsManager.add(mapBlockSettings);
+    this.schemaSettingsManager.add(fieldSettingsComponentMap);
 
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.map', {
@@ -50,4 +61,4 @@ export class MapPlugin extends Plugin {
   }
 }
 
-export default MapPlugin;
+export default PluginMapClient;

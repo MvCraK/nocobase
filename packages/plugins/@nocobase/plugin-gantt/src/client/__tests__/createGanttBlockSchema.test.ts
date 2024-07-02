@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createGanttBlockUISchema } from '../createGanttBlockUISchema';
 
 vi.mock('@formily/shared', () => {
@@ -47,7 +56,7 @@ describe('createGanttBlockSchema', () => {
                         "type": "void",
                         "x-component": "Tabs",
                         "x-component-props": {},
-                        "x-initializer": "TabPaneInitializers",
+                        "x-initializer": "popup:addTab",
                       },
                     },
                     "title": "{{ t("View record") }}",
@@ -79,8 +88,12 @@ describe('createGanttBlockSchema', () => {
                     "x-action-column": "actions",
                     "x-component": "TableV2.Column",
                     "x-decorator": "TableV2.Column.ActionBar",
-                    "x-designer": "TableV2.ActionColumnDesigner",
                     "x-initializer": "table:configureItemActions",
+                    "x-settings": "fieldSettings:TableColumn",
+                    "x-toolbar": "TableColumnSchemaToolbar",
+                    "x-toolbar-props": {
+                      "initializer": "table:configureItemActions",
+                    },
                   },
                 },
                 "type": "array",

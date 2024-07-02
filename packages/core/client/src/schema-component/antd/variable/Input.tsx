@@ -1,13 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
-import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Space, Tag } from 'antd';
+import { Input as AntInput, Cascader, CascaderProps, DatePicker, InputNumber, Select, Space, Tag } from 'antd';
 import useAntdInputStyle from 'antd/es/input/style';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
@@ -129,7 +137,21 @@ function getTypedConstantOption(type: string, types: true | string[], fieldNames
   };
 }
 
-export function Input(props) {
+export type VariableInputProps = {
+  value?: string;
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
+  onChange: (value: string, optionPath?: any[]) => void;
+  children?: any;
+  button?: React.ReactElement;
+  useTypedConstant?: true | string[];
+  changeOnSelect?: CascaderProps['changeOnSelect'];
+  fieldNames?: CascaderProps['fieldNames'];
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  className?: string;
+};
+
+export function Input(props: VariableInputProps) {
   const {
     value = '',
     onChange,
@@ -151,7 +173,7 @@ export function Input(props) {
   const { t } = useTranslation();
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
-  const [variableText, setVariableText] = React.useState('');
+  const [variableText, setVariableText] = React.useState([]);
 
   const parsed = useMemo(() => parseValue(value), [value]);
   const isConstant = typeof parsed === 'string';
@@ -189,13 +211,26 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    setOptions([compile(constantOption), ...(scope ? cloneDeep(scope) : [])]);
-  }, [scope]);
+    const options = [compile(constantOption), ...(scope ? [...scope] : [])].filter((item) => {
+      return !item.deprecated || variable?.[0] === item[names.value];
+    });
+
+    setOptions(options);
+  }, [scope, variable]);
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (!option.children?.length && !option.isLeaf && option.loadChildren) {
-      await option.loadChildren(option);
+      let activeKey;
+      if (variable && variable.length >= 2) {
+        for (const key of variable) {
+          if (key === option[names.value]) {
+            activeKey = key;
+            break;
+          }
+        }
+      }
+      await option.loadChildren(option, activeKey, variable);
       setOptions((prev) => [...prev]);
     }
   };
@@ -234,7 +269,7 @@ export function Input(props) {
             prevOption = options.find((item) => item[names.value] === key);
           } else {
             if (prevOption.loadChildren && !prevOption.children?.length) {
-              await prevOption.loadChildren(prevOption);
+              await prevOption.loadChildren(prevOption, key, variable);
             }
             prevOption = prevOption.children.find((item) => item[names.value] === key);
           }
@@ -251,7 +286,7 @@ export function Input(props) {
         }
       }
       setOptions([...options]);
-      setVariableText(labels.join(' / '));
+      setVariableText([...labels]);
     };
 
     run();
@@ -287,7 +322,6 @@ export function Input(props) {
                   margin: 0;
                   padding: 2px 7px;
                   border-radius: 10px;
-                  white-space: nowrap;
                 }
               }
             `,
@@ -296,6 +330,7 @@ export function Input(props) {
           <div
             role="button"
             aria-label="variable-tag"
+            style={{ overflow: 'hidden' }}
             onInput={(e) => e.preventDefault()}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') {
@@ -309,7 +344,14 @@ export function Input(props) {
             suppressContentEditableWarning
           >
             <Tag contentEditable={false} color="blue">
-              {variableText}
+              {variableText.map((item, index) => {
+                return (
+                  <React.Fragment key={item}>
+                    {index ? ' / ' : ''}
+                    {item}
+                  </React.Fragment>
+                );
+              })}
             </Tag>
           </div>
           {!disabled ? (

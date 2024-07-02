@@ -1,34 +1,27 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
-import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { FormBlockContext } from '../../block-provider';
+import { FormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
+import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { RecordProvider } from '../../record-provider';
 import { SchemaComponent, useProps } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
-import { VariableOption, VariablesContextType } from '../../variables/types';
 import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
-import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
-
-interface usePropsReturn {
-  options: any;
-  defaultValues: any[];
-  collectionName: string;
-  form: Form;
-  variables: VariablesContextType;
-  localVariables: VariableOption | VariableOption[];
-  record: Record<string, any>;
-  /**
-   * create 表示创建表单，update 表示更新表单
-   */
-  formBlockType: 'create' | 'update';
-}
 
 interface Props {
   dynamicComponent: any;
@@ -124,10 +117,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
                     },
                     action: {
                       type: 'void',
-                      'x-component': LinkageRuleActionGroup,
-                      'x-component-props': {
-                        ...props,
-                      },
+                      'x-component': (_props) => <LinkageRuleActionGroup {..._props} {...props} />,
                     },
                   },
                 },
@@ -167,7 +157,17 @@ export const FormLinkageRules = withDynamicSchemaProps(
           },
         },
       }),
-      [collectionName, defaultValues, form, localVariables, options, props, record, variables],
+      [
+        collectionName,
+        defaultValues,
+        form,
+        getAllCollectionsInheritChain,
+        localVariables,
+        options,
+        props,
+        record,
+        variables,
+      ],
     );
     const value = useMemo(
       () => ({ field: options, fieldSchema, dynamicComponent, options: options || [] }),

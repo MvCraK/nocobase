@@ -1,9 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { Collection } from '../../../data-source';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -48,6 +60,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const getLabelUiSchema = useLabelUiSchemaV2();
     const [btnHover, setBtnHover] = useState(false);
+    const { t } = useTranslation();
 
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
@@ -108,18 +121,20 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       return btnElement;
     }
     const renderWithoutTableFieldResourceProvider = () => (
-      <WithoutTableFieldResource.Provider value={true}>
-        <FormProvider>
-          <RecursionField
-            schema={fieldSchema}
-            onlyRenderProperties
-            basePath={field.address}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.Viewer';
-            }}
-          />
-        </FormProvider>
-      </WithoutTableFieldResource.Provider>
+      <VariablePopupRecordProvider recordData={record} collection={targetCollection as Collection}>
+        <WithoutTableFieldResource.Provider value={true}>
+          <FormProvider>
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              basePath={field.address}
+              filterProperties={(s) => {
+                return s['x-component'] === 'AssociationField.Viewer';
+              }}
+            />
+          </FormProvider>
+        </WithoutTableFieldResource.Provider>
+      </VariablePopupRecordProvider>
     );
 
     const renderRecordProvider = () => {

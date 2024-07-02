@@ -1,12 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { useTranslation } from 'react-i18next';
 import { CompatibleSchemaInitializer } from '../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { gridRowColWrap } from '../../../schema-initializer/utils';
 
-/**
- * @deprecated
- * use `createFormBlockInitializers` instead
- */
-export const createFormBlockInitializers_deprecated = new CompatibleSchemaInitializer({
-  name: 'CreateFormBlockInitializers',
+const commonOptions = {
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
@@ -15,13 +21,36 @@ export const createFormBlockInitializers_deprecated = new CompatibleSchemaInitia
       type: 'itemGroup',
       title: '{{t("Data blocks")}}',
       name: 'dataBlocks',
-      children: [
-        {
-          name: 'form',
-          title: '{{t("Form")}}',
-          Component: 'CreateFormBlockInitializer',
-        },
-      ],
+      useChildren() {
+        const currentCollection = useCollection();
+        const { t } = useTranslation();
+
+        return [
+          {
+            name: 'form',
+            title: '{{t("Form")}}',
+            Component: 'FormBlockInitializer',
+            collectionName: currentCollection.name,
+            dataSource: currentCollection.dataSource,
+            componentProps: {
+              filterCollections({ collection, associationField }) {
+                if (associationField) {
+                  return false;
+                }
+                if (collection.name === currentCollection.name) {
+                  return true;
+                }
+              },
+              showAssociationFields: true,
+              onlyCurrentDataSource: true,
+              hideSearch: true,
+              componentType: 'FormItem',
+              currentText: t('Current collection'),
+              otherText: t('Other collections'),
+            },
+          },
+        ];
+      },
     },
     {
       type: 'itemGroup',
@@ -36,40 +65,21 @@ export const createFormBlockInitializers_deprecated = new CompatibleSchemaInitia
       ],
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `createFormBlockInitializers` instead
+ */
+export const createFormBlockInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'CreateFormBlockInitializers',
+  ...commonOptions,
 });
 
 export const createFormBlockInitializers = new CompatibleSchemaInitializer(
   {
     name: 'popup:addNew:addBlock',
-    wrap: gridRowColWrap,
-    title: '{{t("Add block")}}',
-    icon: 'PlusOutlined',
-    items: [
-      {
-        type: 'itemGroup',
-        title: '{{t("Data blocks")}}',
-        name: 'dataBlocks',
-        children: [
-          {
-            name: 'form',
-            title: '{{t("Form")}}',
-            Component: 'CreateFormBlockInitializer',
-          },
-        ],
-      },
-      {
-        type: 'itemGroup',
-        title: '{{t("Other blocks")}}',
-        name: 'otherBlocks',
-        children: [
-          {
-            name: 'markdown',
-            title: '{{t("Markdown")}}',
-            Component: 'MarkdownBlockInitializer',
-          },
-        ],
-      },
-    ],
+    ...commonOptions,
   },
   createFormBlockInitializers_deprecated,
 );

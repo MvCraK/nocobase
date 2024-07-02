@@ -1,7 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '@nocobase/cache';
-import { lodash } from '@nocobase/utils';
+import { Registry, lodash } from '@nocobase/utils';
 import Application from '../application';
 import { getResource } from './resource';
+import { OFFICIAL_PLUGIN_PREFIX } from '..';
+import deepmerge from 'deepmerge';
+
+export interface ResourceStorer {
+  getResources(lang: string): Promise<{
+    [ns: string]: Record<string, string>;
+  }>;
+}
 
 export class Locale {
   app: Application;
@@ -10,11 +27,12 @@ export class Locale {
   localeFn = new Map();
   resourceCached = new Map();
   i18nInstances = new Map();
+  resourceStorers = new Registry<ResourceStorer>();
 
   constructor(app: Application) {
     this.app = app;
     this.app.on('afterLoad', async () => {
-      this.app.log.debug('load locale resource', { submodule: 'locale', method: 'onAfterLoad' });
+      this.app.log.debug('loading locale resource...', { submodule: 'locale', method: 'onAfterLoad' });
       this.app.setMaintainingMessage('load locale resource');
       await this.load();
       this.app.log.debug('locale resource loaded', { submodule: 'locale', method: 'onAfterLoad' });
@@ -32,8 +50,16 @@ export class Locale {
     await this.get(this.defaultLang);
   }
 
+  async reload() {
+    await this.cache.reset();
+  }
+
   setLocaleFn(name: string, fn: (lang: string) => Promise<any>) {
     this.localeFn.set(name, fn);
+  }
+
+  registerResourceStorer(name: string, storer: ResourceStorer) {
+    this.resourceStorers.register(name, storer);
   }
 
   async get(lang: string) {
@@ -68,14 +94,14 @@ export class Locale {
   async getCacheResources(lang: string) {
     this.resourceCached.set(lang, true);
     if (process.env.APP_ENV !== 'production') {
-      await this.cache.reset();
+      await this.reload();
     }
     return await this.wrapCache(`resources:${lang}`, () => this.getResources(lang));
   }
 
-  getResources(lang: string) {
+  async getResources(lang: string) {
     const resources = {};
-    const names = this.app.pm.getAliases();
+    const names = this.app.pm.getPlugins().keys();
     for (const name of names) {
       try {
         const p = this.app.pm.get(name);
@@ -91,14 +117,31 @@ export class Locale {
         const res = getResource(packageName, lang);
         if (res) {
           resources[packageName] = { ...res };
-          if (packageName.includes('@nocobase/plugin-')) {
-            resources[packageName.substring('@nocobase/plugin-'.length)] = { ...res };
+          if (packageName.includes(OFFICIAL_PLUGIN_PREFIX)) {
+            resources[packageName.substring(OFFICIAL_PLUGIN_PREFIX.length)] = { ...res };
           }
         }
       } catch (err) {
         // empty
       }
     }
+
+    // handle custom resources
+    const storers = this.resourceStorers.getValues();
+    for (const storer of storers) {
+      const custom = await storer.getResources(lang);
+      Object.keys(custom).forEach((key) => {
+        const module = key.replace('resources.', '');
+        const resource = resources[module];
+        const customResource = custom[key];
+        resources[module] = resource ? deepmerge(resource, customResource) : customResource;
+        const pkgName = `${OFFICIAL_PLUGIN_PREFIX}${module}`;
+        if (resources[pkgName]) {
+          resources[pkgName] = { ...resources[module] };
+        }
+      });
+    }
+
     Object.keys(resources).forEach((name) => {
       this.app.i18n.addResources(lang, name, resources[name]);
     });

@@ -1,8 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import * as process from 'node:process';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -19,7 +29,7 @@ async function getLang(ctx) {
   return lang;
 }
 
-export class ClientPlugin extends Plugin {
+export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
   async install() {
@@ -54,7 +64,6 @@ export class ClientPlugin extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
-    this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
       actions: ['app:restart', 'app:clearCache'],
@@ -73,7 +82,8 @@ export class ClientPlugin extends Plugin {
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;
           }
-          ctx.body = {
+
+          const info: any = {
             database: {
               dialect,
             },
@@ -82,6 +92,11 @@ export class ClientPlugin extends Plugin {
             name: ctx.app.name,
             theme: currentUser?.systemSettings?.theme || systemSetting?.options?.theme || 'default',
           };
+
+          if (process.env['EXPORT_LIMIT']) {
+            info.exportLimit = parseInt(process.env['EXPORT_LIMIT']);
+          }
+          ctx.body = info;
           await next();
         },
         async getLang(ctx, next) {
@@ -106,4 +121,4 @@ export class ClientPlugin extends Plugin {
   }
 }
 
-export default ClientPlugin;
+export default PluginClientServer;

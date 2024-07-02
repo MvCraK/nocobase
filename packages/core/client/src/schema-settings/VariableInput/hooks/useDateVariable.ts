@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDateRanges } from '../../../schema-component/antd/date-picker/util';
@@ -184,7 +193,7 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled }: Props = {}
   const { t } = useTranslation();
   const datetimeSettings = useMemo(() => {
     const operatorValue = operator?.value || '';
-    const disabled = noDisabled ? false : !['DatePicker', 'DatePicker.RangePicker'].includes(schema?.['x-component']);
+    const disabled = noDisabled ? false : !['DatePicker.RangePicker'].includes(schema?.['x-component']);
     const dateOptions = [
       {
         key: 'now',

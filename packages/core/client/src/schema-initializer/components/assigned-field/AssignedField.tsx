@@ -1,22 +1,31 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
-  useCollection_deprecated,
   useCollectionField_deprecated,
   useCollectionFilterOptions,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
 } from '../../../collection-manager';
+import { CollectionFieldProvider } from '../../../data-source';
 import { useRecord } from '../../../record-provider';
 import { useCompile, useComponent } from '../../../schema-component';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { CollectionFieldProvider } from '../../../data-source';
 
 interface AssignedFieldProps {
   value: any;

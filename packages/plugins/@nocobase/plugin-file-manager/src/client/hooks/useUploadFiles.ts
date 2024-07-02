@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   RecordPickerContext,
   useActionContext,
@@ -5,20 +14,16 @@ import {
   useCollection,
   useSourceIdFromParentRecord,
 } from '@nocobase/client';
-import { notification } from 'antd';
 import { useContext, useMemo } from 'react';
-import { useFmTranslation } from '../locale';
-
-// 限制上传文件大小为 10M
-export const FILE_LIMIT_SIZE = 1024 * 1024 * 1024;
+import { useStorageRules } from './useStorageRules';
 
 export const useUploadFiles = () => {
   const { service } = useBlockRequestContext();
-  const { t } = useFmTranslation();
   const { setVisible } = useActionContext();
   const { props: blockProps } = useBlockRequestContext();
   const collection = useCollection();
   const sourceId = useSourceIdFromParentRecord();
+  const rules = useStorageRules(collection?.getOption('storage'));
   const action = useMemo(() => {
     let action = `${collection.name}:create`;
     if (blockProps?.association) {
@@ -34,19 +39,6 @@ export const useUploadFiles = () => {
 
   return {
     action,
-    /**
-     * 返回 false 会阻止上传，返回 true 会继续上传
-     */
-    beforeUpload(file) {
-      if (file.size > FILE_LIMIT_SIZE) {
-        notification.error({
-          message: `${t('File size cannot exceed')} ${FILE_LIMIT_SIZE / 1024 / 1024}M`,
-        });
-        file.status = 'error';
-        return false;
-      }
-      return true;
-    },
     onChange(fileList) {
       fileList.forEach((file) => {
         if (file.status === 'uploading' && !uploadingFiles[file.uid]) {
@@ -69,5 +61,6 @@ export const useUploadFiles = () => {
         setVisible(false);
       }
     },
+    rules,
   };
 };

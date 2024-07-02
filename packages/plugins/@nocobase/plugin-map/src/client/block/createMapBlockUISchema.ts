@@ -1,5 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { theme } from 'antd';
 
 export const createMapBlockUISchema = (options: {
   collectionName: string;
@@ -7,7 +17,6 @@ export const createMapBlockUISchema = (options: {
   fieldNames: object;
 }): ISchema => {
   const { collectionName, fieldNames, dataSource } = options;
-
   return {
     type: 'void',
     'x-acl-action': `${collectionName}:list`,
@@ -31,11 +40,7 @@ export const createMapBlockUISchema = (options: {
         type: 'void',
         'x-initializer': 'map:configureActions',
         'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 16,
-          },
-        },
+        'x-component-props': {},
       },
       [uid()]: {
         type: 'void',
@@ -54,7 +59,7 @@ export const createMapBlockUISchema = (options: {
                 type: 'void',
                 'x-component': 'Tabs',
                 'x-component-props': {},
-                'x-initializer': 'TabPaneInitializers',
+                'x-initializer': 'popup:addTab',
                 properties: {
                   tab1: {
                     type: 'void',

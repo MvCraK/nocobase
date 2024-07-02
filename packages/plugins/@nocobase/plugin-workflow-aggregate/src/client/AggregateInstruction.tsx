@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
 import { Cascader } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -123,7 +132,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
       const collection = getCollection(collectionName, dataSourceKey);
       const primaryKeyField = collection.fields.find((f) => f.primaryKey);
 
-      setValuesIn('collection', `${dataSourceKey}:${target}`);
+      setValuesIn('collection', joinCollectionName(dataSourceKey, target));
 
       onChange({
         name,

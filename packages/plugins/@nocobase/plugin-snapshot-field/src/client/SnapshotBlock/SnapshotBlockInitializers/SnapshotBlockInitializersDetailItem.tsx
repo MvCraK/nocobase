@@ -1,7 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import {
-  useBlockAssociationContext,
   useCollection_deprecated,
   useSchemaTemplateManager,
   useRecordCollectionDataSourceItems,
@@ -9,6 +17,7 @@ import {
   useSchemaInitializer,
   SchemaInitializerItem,
   useSchemaInitializerItem,
+  useAssociationName,
 } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -73,7 +82,7 @@ export const SnapshotBlockInitializersDetailItem = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collection = targetCollection || useCollection_deprecated();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
   const { block } = useBlockRequestContext();
   const actionInitializers =
     block !== 'TableField' ? itemConfig.actionInitializers || 'details:configureActions' : null;

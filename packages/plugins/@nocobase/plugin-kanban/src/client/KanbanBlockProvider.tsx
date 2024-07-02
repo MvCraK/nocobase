@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
@@ -51,7 +60,7 @@ const InternalKanbanBlockProvider = (props) => {
           service,
           resource,
           groupField,
-          fixedBlock: field?.decoratorProps?.fixedBlock,
+          // fixedBlock: field?.decoratorProps?.fixedBlock,
           sortField: props?.sortField,
         }}
       >
@@ -111,7 +120,7 @@ const useAssociationNames = (collection) => {
 
 export const KanbanBlockProvider = (props) => {
   const params = { ...props.params };
-  const appends = useAssociationNames(props.collection);
+  const appends = useAssociationNames(props.association || props.collection);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
@@ -144,11 +153,11 @@ export const useKanbanBlockProps = () => {
 
   useEffect(() => {
     const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
-    if (isEqual(field.value, data)) {
+    if (isEqual(field.value, data) && dataSource === field.value) {
       return;
     }
     field.value = data;
-    setDataSource(data);
+    setDataSource(field.value);
   }, [ctx?.service?.loading]);
 
   const disableCardDrag = useDisableCardDrag();

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { CollectionOptions, Collection } from '../collection';
 import type { Application } from '../../application/Application';
 
@@ -56,9 +65,9 @@ export class DataSourceManager {
     this.getDataSources().forEach((dataSource) => dataSource.collectionManager.reAddCollections());
   }
 
-  getDataSources(filterCollection?: (dataSource: DataSource) => boolean) {
+  getDataSources(filterDataSource?: (dataSource: DataSource) => boolean) {
     const allDataSources = Object.values(this.dataSourceInstancesMap);
-    return filterCollection ? _.filter(allDataSources, filterCollection) : allDataSources;
+    return filterDataSource ? _.filter(allDataSources, filterDataSource) : allDataSources;
   }
 
   getDataSource(key?: string) {

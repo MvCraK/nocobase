@@ -1,13 +1,26 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createForm } from '@formily/core';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { Schema, useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
-import { useCollection_deprecated } from '../collection-manager';
-import { CollectionRecord, useCollectionParentRecordData, useCollectionRecord } from '../data-source';
-import { RecordProvider, useRecord } from '../record-provider';
-import { useActionContext, useDesignable } from '../schema-component';
-import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
+import {
+  CollectionRecord,
+  useCollectionManager,
+  useCollectionParentRecordData,
+  useCollectionRecord,
+} from '../data-source';
+import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
+import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
+import { RecordProvider } from '../record-provider';
+import { useActionContext } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
@@ -29,8 +42,9 @@ export const FormBlockContext = createContext<{
 FormBlockContext.displayName = 'FormBlockContext';
 
 const InternalFormBlockProvider = (props) => {
+  const cm = useCollectionManager();
   const ctx = useFormBlockContext();
-  const { action, readPretty, params, collection } = props;
+  const { action, readPretty, params, collection, association } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -55,10 +69,23 @@ const InternalFormBlockProvider = (props) => {
       resource,
       updateAssociationValues,
       formBlockRef,
-      collectionName: collection,
+      collectionName: collection || cm.getCollectionField(association)?.target,
       formRecord: record,
     };
-  }, [action, collection, ctx, field, form, params, record, resource, service, updateAssociationValues]);
+  }, [
+    action,
+    association,
+    cm,
+    collection,
+    ctx,
+    field,
+    form,
+    params,
+    record,
+    resource,
+    service,
+    updateAssociationValues,
+  ]);
 
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
@@ -67,9 +94,7 @@ const InternalFormBlockProvider = (props) => {
   return (
     <FormBlockContext.Provider value={formBlockValue}>
       <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
-        </div>
+        <div ref={formBlockRef}>{props.children}</div>
       </RecordProvider>
     </FormBlockContext.Provider>
   );
@@ -96,31 +121,17 @@ export const useIsDetailBlock = () => {
 };
 
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
-  const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
-  const { collection, isCusomeizeCreate } = props;
-  const { __collection } = record;
-  const currentCollection = useCollection_deprecated();
-  const { designable } = useDesignable();
-  const isDetailBlock = useIsDetailBlock();
-  let detailFlag = false;
-  if (isDetailBlock) {
-    detailFlag = true;
-    if (!designable && __collection) {
-      detailFlag = __collection === collection;
-    }
-  }
-  const createFlag =
-    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) ||
-    !currentCollection.name ||
-    !collection;
-  if (!detailFlag && !createFlag && !isCusomeizeCreate) {
-    return null;
-  }
+  const { parentRecord } = props;
 
   return (
     <TemplateBlockProvider>
-      <BlockProvider name={props.name || 'form'} {...props} block={'form'} parentRecord={parentRecordData}>
+      <BlockProvider
+        name={props.name || 'form'}
+        {...props}
+        block={'form'}
+        parentRecord={parentRecord || parentRecordData}
+      >
         <FormActiveFieldsProvider name="form">
           <InternalFormBlockProvider {...props} />
         </FormActiveFieldsProvider>
@@ -142,14 +153,14 @@ export const useFormBlockContext = () => {
  */
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
-  const record = useRecord();
+  const treeParentRecord = useTreeParentRecord();
   const { fieldSchema } = useActionContext();
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
     if (addChild) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
-        field.value = new Proxy({ ...record?.__parent }, {});
+        field.value = treeParentRecord;
       });
     }
   });
@@ -162,19 +173,6 @@ export const useFormBlockProps = () => {
   return {
     form: ctx.form,
   };
-};
-
-const RenderChildrenWithDataTemplates = ({ form }) => {
-  const FieldSchema = useFieldSchema();
-  const { findComponent } = useDesignable();
-  const field = useField();
-  const Component = findComponent(field.component?.[0]) || React.Fragment;
-  return (
-    <Component {...field.componentProps}>
-      <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
-      <RecursionField schema={FieldSchema} onlyRenderProperties />
-    </Component>
-  );
 };
 
 /**

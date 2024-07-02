@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import {
@@ -9,7 +18,7 @@ import {
   useProps,
   withDynamicSchemaProps,
 } from '@nocobase/client';
-import { Spin, Tag, Card, Skeleton } from 'antd';
+import { Card, Skeleton, Spin, Tag } from 'antd';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { Board } from './board';
@@ -155,7 +164,7 @@ export const Kanban: any = withDynamicSchemaProps(
                         <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
                       ) : (
                         <Card bordered={false}>
-                          <Skeleton active paragraph={{ rows: 4 }} />
+                          <Skeleton paragraph={{ rows: 4 }} />
                         </Card>
                       )}
                     </div>

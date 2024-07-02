@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { ComponentType, useEffect } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
@@ -11,7 +20,7 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp(Demo: ComponentType, dataSource?: string) {
+function renderAppOptions(Demo: ComponentType, dataSource?: string) {
   const app = new Application({
     dataSourceManager: {
       collections: collections as any,
@@ -41,7 +50,7 @@ describe('CollectionManagerProvider', () => {
       const users = cm.getCollection('users');
       return <div data-testid="demo">{users.name}</div>;
     };
-    renderApp(Demo);
+    renderAppOptions(Demo);
 
     expect(screen.getByTestId('demo')).toHaveTextContent('users');
   });
@@ -51,7 +60,7 @@ describe('CollectionManagerProvider', () => {
       const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
-    renderApp(Demo);
+    renderAppOptions(Demo);
 
     expect(screen.getByTestId('demo')).toHaveTextContent('2');
   });
@@ -61,7 +70,7 @@ describe('CollectionManagerProvider', () => {
       const collections = useCollections((collection) => collection.name === 'users');
       return <div data-testid="demo">{collections.length}</div>;
     };
-    renderApp(Demo);
+    renderAppOptions(Demo);
 
     expect(screen.getByTestId('demo')).toHaveTextContent('1');
   });
@@ -71,7 +80,7 @@ describe('CollectionManagerProvider', () => {
       const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
-    renderApp(Demo, 'a');
+    renderAppOptions(Demo, 'a');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('1');
   });
@@ -84,13 +93,13 @@ describe('CollectionManagerProvider', () => {
 
     const Wrapper = () => {
       return (
-        <CollectionManagerProvider collections={[collections[1] as any]}>
+        <CollectionManagerProvider>
           <Demo></Demo>
         </CollectionManagerProvider>
       );
     };
 
-    renderApp(Wrapper, 'a');
+    renderAppOptions(Wrapper, 'a');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('2');
   });
@@ -111,7 +120,7 @@ describe('CollectionManagerProvider', () => {
       );
     };
 
-    renderApp(Wrapper, 'a');
+    renderAppOptions(Wrapper, 'a');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('2');
   });

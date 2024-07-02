@@ -1,13 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { recursiveParent, useFormBlockContext, useTableSelectorContext } from '../../../../block-provider';
+import { recursiveParent, useTableSelectorContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import {
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useSortFields,
 } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
@@ -77,7 +87,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
         return {
           title: t('Tree table'),
           defaultChecked: true,
-          checked: field.decoratorProps.treeTable !== false,
+          checked: field.decoratorProps.treeTable,
           onChange: (flag) => {
             field.form.clearFormGraph(`${field.address}.*`);
             field.decoratorProps.treeTable = flag;

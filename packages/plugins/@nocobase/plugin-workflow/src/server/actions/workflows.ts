@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import actions, { Context, utils } from '@nocobase/actions';
 import { Op, Repository } from '@nocobase/database';
 
@@ -75,7 +84,6 @@ export async function revision(context: Context, next) {
           title: origin.title,
           triggerTitle: origin.triggerTitle,
           allExecuted: origin.allExecuted,
-          sync: origin.sync,
         }
       : values;
 
@@ -84,6 +92,7 @@ export async function revision(context: Context, next) {
         title: `${origin.title} copy`,
         description: origin.description,
         ...revisionData,
+        sync: origin.sync,
         type: origin.type,
         config:
           typeof trigger.duplicateConfig === 'function'

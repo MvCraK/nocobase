@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
 import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -36,11 +45,8 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
       upgrading: true,
     });
 
-    console.log({ beforeSubAppStatus });
     try {
       mainApp.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
-      console.log(`${instance.name}: upgrading...`);
-
       await subApp.runAsCLI(['upgrade'], { from: 'user' });
       if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
         await AppSupervisor.getInstance().removeApp(instance.name);
@@ -95,7 +101,7 @@ const defaultDbCreator = async (app: Application) => {
 };
 
 const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
-  const rawDatabaseOptions = PluginMultiAppManager.getDatabaseConfig(mainApp);
+  const rawDatabaseOptions = PluginMultiAppManagerServer.getDatabaseConfig(mainApp);
 
   if (rawDatabaseOptions.dialect === 'sqlite') {
     const mainAppStorage = rawDatabaseOptions.storage;
@@ -119,7 +125,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
   };
 };
 
-export class PluginMultiAppManager extends Plugin {
+export class PluginMultiAppManagerServer extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
@@ -164,6 +170,12 @@ export class PluginMultiAppManager extends Plugin {
       async (model: ApplicationModel, options: Transactionable & { context?: any }) => {
         const { transaction } = options;
 
+        const name = model.get('name') as string;
+
+        if (name === 'main') {
+          throw new Error('Application name "main" is reserved');
+        }
+
         const subApp = model.registerToSupervisor(this.app, {
           appOptionsFactory: this.appOptionsFactory,
         });
@@ -204,7 +216,8 @@ export class PluginMultiAppManager extends Plugin {
         return;
       }
 
-      const applicationRecord = (await self.app.db.getRepository('applications').findOne({
+      const mainApp = await appSupervisor.getApp('main');
+      const applicationRecord = (await mainApp.db.getRepository('applications').findOne({
         filter: {
           name,
         },
@@ -224,7 +237,7 @@ export class PluginMultiAppManager extends Plugin {
         return;
       }
 
-      const subApp = applicationRecord.registerToSupervisor(self.app, {
+      const subApp = applicationRecord.registerToSupervisor(mainApp, {
         appOptionsFactory: self.appOptionsFactory,
       });
 
@@ -234,7 +247,7 @@ export class PluginMultiAppManager extends Plugin {
       }
     }
 
-    AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication);
+    AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication.bind(this));
 
     Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
       const { req } = ctx;

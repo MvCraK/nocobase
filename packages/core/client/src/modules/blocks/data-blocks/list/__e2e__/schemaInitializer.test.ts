@@ -1,4 +1,21 @@
-import { createBlockInPage, expect, oneEmptyListBlock, test } from '@nocobase/test/e2e';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Page, createBlockInPage, expect, oneEmptyListBlock, test } from '@nocobase/test/e2e';
+import { oneEmptyTableWithUsers } from '../../details-multi/__e2e__/templatesOfBug';
+
+const deleteButton = async (page: Page, name: string) => {
+  await page.getByRole('button', { name }).hover();
+  await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+};
 
 test.describe('where list block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -8,6 +25,37 @@ test.describe('where list block can be added', () => {
     await createBlockInPage(page, 'List');
     await expect(page.getByLabel('block-item-CardItem-users-list')).toBeVisible();
   });
+
+  test('popup', async ({ page, mockPage }) => {
+    await mockPage(oneEmptyTableWithUsers).goto();
+
+    // 1. 打开弹窗，通过 Associated records 创建一个列表区块
+    await page.getByLabel('action-Action.Link-View').click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'ordered-list List right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Role name' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CollectionField-').getByText('Root')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-').getByText('Admin')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-').getByText('Member')).toBeVisible();
+
+    // 2. 通过 Other records 创建一个列表区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'ordered-list List right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-users').hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-list-users.nickname-Nickname').getByText('Super Admin'),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure global actions', () => {
@@ -16,12 +64,10 @@ test.describe('configure global actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-list:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Refresh' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Filter' })).toBeVisible();
@@ -29,14 +75,9 @@ test.describe('configure global actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-list:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByRole('menuitem', { name: 'Refresh' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Refresh' }).getByRole('switch')).not.toBeChecked();
+    await deleteButton(page, 'Filter');
+    await deleteButton(page, 'Add new');
+    await deleteButton(page, 'Refresh');
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Filter' })).not.toBeVisible();
@@ -53,12 +94,10 @@ test.describe('configure item actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'View' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action.Link-View-view-general-list').first()).toBeVisible();
@@ -66,14 +105,9 @@ test.describe('configure item actions', () => {
     await expect(page.getByLabel('action-Action.Link-Delete-destroy-general-list').first()).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
-    await page.getByRole('menuitem', { name: 'View' }).click();
-    await page.getByRole('menuitem', { name: 'Edit' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'View' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).not.toBeChecked();
+    await deleteButton(page, 'View');
+    await deleteButton(page, 'Edit');
+    await deleteButton(page, 'Delete');
 
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action.Link-View-view-general-list').first()).not.toBeVisible();
@@ -87,8 +121,8 @@ test.describe('configure item actions', () => {
     await nocoPage.goto();
 
     await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
-    await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Popup' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Update record' }).click();
 
     await page.mouse.move(300, 0);

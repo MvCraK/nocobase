@@ -1,9 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
+  expect,
   expectSettingsMenu,
   oneDetailBlockWithM2oFieldToGeneral,
   oneEmptyDetailsBlock,
   test,
 } from '@nocobase/test/e2e';
+import { detailBlockWithLinkageRule, detailsBlockWithLinkageRule } from './templatesOfBug';
 
 test.describe('multi data details block schema settings', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -19,12 +30,33 @@ test.describe('multi data details block schema settings', () => {
       },
       supportedOptions: [
         'Edit block title',
+        'Linkage rules',
         'Set the data scope',
         'Set default sorting rules',
         'Save as template',
         'Delete',
       ],
     });
+  });
+  test('support linkage rule', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(detailBlockWithLinkageRule).waitForInit();
+    await nocoPage.goto();
+    await expect(page.getByLabel('block-item-CollectionField-users-details-users.email-Email')).not.toBeVisible();
+    // 禁用规则，联动规则失效
+    await page.getByLabel('block-item-CardItem-users-').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-users').hover();
+    await page.getByText('Linkage rules').click();
+    await page.getByRole('switch', { name: 'On Off' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
+    await page.reload();
+    await expect(page.getByLabel('block-item-CollectionField-users-details-users.email-Email')).toBeVisible();
+  });
+  test('multi detail block support linkage rule', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(detailsBlockWithLinkageRule).waitForInit();
+    await nocoPage.goto();
+    await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title')).not.toBeVisible();
+    await page.getByRole('button', { name: 'right' }).click();
+    await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title')).toBeVisible();
   });
 });
 
@@ -36,6 +68,7 @@ test.describe('actions schema settings', () => {
     // 创建 Edit & Delete 两个按钮
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.mouse.move(0, 300);
 

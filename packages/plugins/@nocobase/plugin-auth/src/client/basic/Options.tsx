@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useAuthTranslation } from '../locale';
@@ -20,9 +29,7 @@ export const Options = () => {
                 type: 'boolean',
                 title: '{{t("Allow to sign up")}}',
                 'x-component': 'Checkbox',
-                'x-component-props': {
-                  defaultChecked: true,
-                },
+                default: true,
               },
             },
           },

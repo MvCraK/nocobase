@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollectionField } from '../../../../data-source';
@@ -175,7 +184,7 @@ const quickCreate: any = {
           }, null);
 
           if (!hasAddNew) {
-            const addNewActionschema = {
+            const addNewActionSchema = {
               'x-action': 'create',
               'x-acl-action': 'create',
               title: "{{t('Add new')}}",
@@ -190,7 +199,7 @@ const quickCreate: any = {
                 component: 'CreateRecordAction',
               },
             };
-            insertAdjacent('afterBegin', addNewActionschema);
+            insertAdjacent('afterBegin', addNewActionSchema);
           }
         }
         const schema = {

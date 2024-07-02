@@ -1,43 +1,70 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
-import { FormLayout } from '@formily/antd-v5';
-import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
-import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
+import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
+import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { getValuesByPath } from '@nocobase/utils/client';
-import { ConfigProvider, Spin } from 'antd';
+import { ConfigProvider, Spin, theme } from 'antd';
+import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
-import { useAttach, useComponent } from '../..';
+import { useAttach, useComponent, useDesignable } from '../..';
+import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { getPath } from '../../../variables/utils/getPath';
 import { getVariableName } from '../../../variables/utils/getVariableName';
-import { isVariable, REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
+import { getVariablesFromExpression, isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
+import { useFormBlockHeight } from './hook';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 
-export interface FormProps {
-  [key: string]: any;
+export interface FormProps extends IFormLayoutProps {
+  form?: FormilyForm;
+  disabled?: boolean;
 }
-function hasInitialValues(obj) {
-  return Object.values(obj).some((value) => value !== null);
-}
+
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
+  const height = useFormBlockHeight();
+  const { token } = theme.useToken();
+  const { designable } = useDesignable();
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'} {...others}>
-          <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+          <div
+            className={css`
+              .nb-grid-container {
+                height: ${height ? height + 'px' : '100%'};
+                overflow-y: auto;
+                margin-left: -${token.marginLG}px;
+                margin-right: -${token.marginLG}px;
+                padding-left: ${token.marginLG}px;
+                padding-right: ${token.marginLG}px;
+              }
+            `}
+          >
+            <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+          </div>
         </FormLayout>
       </FormContext.Provider>
     </FieldContext.Provider>
@@ -90,7 +117,7 @@ const WithForm = (props: WithFormProps) => {
   const { setFormValueChanged } = useActionContext();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const { templateFinshed } = useTemplateBlockContext();
+  const { templateFinished } = useTemplateBlockContext();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
@@ -151,11 +178,10 @@ const WithForm = (props: WithFormProps) => {
                     const result = [fieldValuesInCondition, variableValuesInCondition, variableValuesInExpression]
                       .map((item) => JSON.stringify(item))
                       .join(',');
-
                     return result;
                   },
                   getSubscriber(action, field, rule, variables, localVariables),
-                  { fireImmediately: hasInitialValues(form.initialValues) },
+                  { fireImmediately: true, equals: _.isEqual },
                 ),
               );
             });
@@ -170,7 +196,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [linkageRules, templateFinshed]);
+  }, [linkageRules, templateFinished]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
@@ -211,13 +237,23 @@ export const Form: React.FC<FormProps> & {
 } = withDynamicSchemaProps(
   observer((props) => {
     const field = useField<Field>();
+    const { token } = useToken();
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { form, disabled, ...others } = useProps(props);
+    const theme: any = useMemo(() => {
+      return {
+        token: {
+          // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
+          // @ts-ignore
+          marginBlock: token.marginLG,
+        },
+      };
+    }, [token.marginLG]);
 
     const formDisabled = disabled || field.disabled;
     return (
-      <ConfigProvider componentDisabled={formDisabled}>
+      <ConfigProvider componentDisabled={formDisabled} theme={theme}>
         <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
           <Spin spinning={field.loading || false}>
             {form ? (
@@ -371,8 +407,7 @@ function getVariableValuesInExpression({ action, localVariables }) {
     return;
   }
 
-  return value
-    .match(REGEX_OF_VARIABLE)
+  return getVariablesFromExpression(value)
     ?.map((variableString: string) => {
       return getVariableValue(variableString, localVariables);
     })

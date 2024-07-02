@@ -1,13 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormOutlined } from '@ant-design/icons';
 import {
   SchemaInitializerItem,
   createCreateFormBlockUISchema,
-  useBlockAssociationContext,
   useCollection_deprecated,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaTemplateManager,
+  useAssociationName,
 } from '@nocobase/client';
 import React from 'react';
 import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
@@ -17,7 +26,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
   const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem

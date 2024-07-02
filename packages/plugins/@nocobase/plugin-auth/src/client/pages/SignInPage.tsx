@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { Space, Tabs } from 'antd';
 import React, { createElement, useContext } from 'react';
@@ -5,6 +14,7 @@ import { useCurrentDocumentTitle, usePlugin, useViewport } from '@nocobase/clien
 import AuthPlugin, { AuthOptions } from '..';
 import { Authenticator, AuthenticatorsContext } from '../authenticator';
 import { useAuthTranslation } from '../locale';
+import { Schema } from '@formily/react';
 
 export const useSignInForms = (): {
   [authType: string]: AuthOptions['components']['SignInForm'];
@@ -54,7 +64,10 @@ export const SignInPage = () => {
       if (!C) {
         return;
       }
-      const defaultTabTitle = `${t('Sign-in')} (${t(authenticator.authTypeTitle || authenticator.authType)})`;
+      const defaultTabTitle = `${t('Sign-in')} (${Schema.compile(
+        authenticator.authTypeTitle || authenticator.authType,
+        { t },
+      )})`;
       return {
         component: createElement<{
           authenticator: Authenticator;

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import {
   FieldContext,
@@ -276,8 +285,9 @@ const SideMenu = ({
   mode,
   sideMenuSchema,
   sideMenuRef,
-  defaultOpenKeys,
-  defaultSelectedKeys,
+  openKeys,
+  setOpenKeys,
+  selectedKeys,
   onSelect,
   render,
   t,
@@ -335,10 +345,13 @@ const SideMenu = ({
         <Component />
         <AntdMenu
           mode={'inline'}
-          defaultOpenKeys={defaultOpenKeys}
-          defaultSelectedKeys={defaultSelectedKeys}
+          openKeys={openKeys}
+          selectedKeys={selectedKeys}
           onSelect={(info) => {
             onSelect?.(info);
+          }}
+          onOpenChange={(openKeys) => {
+            setOpenKeys(openKeys);
           }}
           className={sideMenuClass}
           items={items as MenuProps['items']}
@@ -465,8 +478,9 @@ export const Menu: ComposedMenu = observer(
               mode={mode}
               sideMenuSchema={sideMenuSchema}
               sideMenuRef={sideMenuRef}
-              defaultOpenKeys={defaultOpenKeys}
-              defaultSelectedKeys={defaultSelectedKeys}
+              openKeys={defaultOpenKeys}
+              setOpenKeys={setDefaultOpenKeys}
+              selectedKeys={selectedKeys}
               onSelect={onSelect}
               render={render}
               t={t}

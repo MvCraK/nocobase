@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SchemaInitializer, SchemaInitializerItemType, useCollection_deprecated } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
@@ -56,7 +65,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: function useVisible() {
+          useVisible: function useVisible() {
             const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -101,7 +110,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
                     type: 'void',
                     'x-component': 'Tabs',
                     'x-component-props': {},
-                    'x-initializer': 'TabPaneInitializers',
+                    'x-initializer': 'popup:addTab',
                     properties: {
                       tab1: {
                         type: 'void',

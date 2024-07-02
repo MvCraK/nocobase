@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 
 import { Plugin } from '@nocobase/client';
@@ -34,7 +43,7 @@ export default class PluginWorkflowClient extends Plugin {
   };
 
   isWorkflowSync(workflow) {
-    return this.triggers.get(workflow.type).sync ?? workflow.sync;
+    return this.triggers.get(workflow.type)?.sync ?? workflow.sync;
   }
 
   registerTrigger(type: string, trigger: Trigger | { new (): Trigger }) {
@@ -58,8 +67,20 @@ export default class PluginWorkflowClient extends Plugin {
   }
 
   async load() {
-    this.addRoutes();
-    this.addComponents();
+    this.app.router.add('admin.workflow.workflows.id', {
+      path: getWorkflowDetailPath(':id'),
+      element: <WorkflowPage />,
+    });
+
+    this.app.router.add('admin.workflow.executions.id', {
+      path: getWorkflowExecutionsPath(':id'),
+      element: <ExecutionPage />,
+    });
+
+    this.app.addComponents({
+      WorkflowPage,
+      ExecutionPage,
+    });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
@@ -81,24 +102,6 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('update', UpdateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
-  }
-
-  addComponents() {
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
-    });
-  }
-
-  addRoutes() {
-    this.app.router.add('admin.workflow.workflows.id', {
-      path: getWorkflowDetailPath(':id'),
-      element: <WorkflowPage />,
-    });
-    this.app.router.add('admin.workflow.executions.id', {
-      path: getWorkflowExecutionsPath(':id'),
-      element: <ExecutionPage />,
-    });
   }
 }
 

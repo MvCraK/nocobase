@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import configs from './configs';
 import { getAntChart } from './AntChart';
@@ -25,36 +34,49 @@ export class G2PlotChart extends Chart {
   };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps) {
+    const xFieldProps = fieldProps[general.xField];
+    const yFieldProps = fieldProps[general.yField];
+    const seriesFieldProps = fieldProps[general.seriesField];
     const config = {
       legend: {
         color: {
           itemLabelText: (datnum: { label: string }) => {
-            const props = fieldProps[general.seriesField];
-            const transformer = props?.transformer;
+            const transformer = seriesFieldProps?.transformer;
             return transformer ? transformer(datnum.label) : datnum.label;
           },
         },
       },
-      tooltip: (d, index: number, data, column: any) => {
-        const field = column.y?.field;
-        const props = fieldProps[field];
-        const name = props?.label || field;
-        const transformer = props?.transformer;
-        const value = column.y?.value[index];
-        return { name, value: transformer ? transformer(value) : value };
+      tooltip: {
+        title: (data: any) => {
+          const { [general.xField]: x } = data;
+          return xFieldProps?.transformer ? xFieldProps.transformer(x) : x;
+        },
+        items: [
+          (data: any) => {
+            const { [general.xField]: x, [general.yField]: y, [general.seriesField]: series } = data;
+            let name = '';
+            if (series) {
+              name = seriesFieldProps.transformer ? seriesFieldProps.transformer(series) : series;
+            } else {
+              name = yFieldProps?.label || general.yField;
+            }
+            return {
+              name,
+              value: yFieldProps?.transformer ? yFieldProps.transformer(y) : y,
+            };
+          },
+        ],
       },
       axis: {
         x: {
           labelFormatter: (datnum: any) => {
-            const props = fieldProps[general.xField];
-            const transformer = props?.transformer;
+            const transformer = xFieldProps?.transformer;
             return transformer ? transformer(datnum) : datnum;
           },
         },
         y: {
           labelFormatter: (datnum: any) => {
-            const props = fieldProps[general.yField];
-            const transformer = props?.transformer;
+            const transformer = yFieldProps?.transformer;
             return transformer ? transformer(datnum) : datnum;
           },
         },

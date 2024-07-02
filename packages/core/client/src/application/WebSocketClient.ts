@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { define, observable } from '@formily/reactive';
 import { getSubAppName } from '@nocobase/sdk';
 import { Application } from './Application';
@@ -41,8 +50,7 @@ export class WebSocketClient {
     if (!this.app) {
       return;
     }
-    const options = this.app.getOptions();
-    const apiBaseURL = options?.apiClient?.['baseURL'];
+    const apiBaseURL = this.app.getApiUrl();
     if (!apiBaseURL) {
       return;
     }
@@ -123,10 +131,10 @@ export class WebSocketClient {
       console.log('onclose', this.readyState, this._reconnectTimes, this.serverDown);
       this.connected = false;
       clearInterval(pingIntervalTimer);
-      if (this._reconnectTimes >= Math.min(this.reconnectAttempts, 5)) {
-        this.serverDown = true;
-        this.emit('serverDown', event);
-      }
+      // if (this._reconnectTimes >= Math.min(this.reconnectAttempts, 5)) {
+      // this.serverDown = true;
+      // this.emit('serverDown', event);
+      // }
     };
   }
 

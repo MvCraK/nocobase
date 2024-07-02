@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
@@ -8,6 +17,7 @@ import { Options, SignInForm, SignUpForm } from './basic';
 import { NAMESPACE } from './locale';
 import { AuthLayout, SignInPage, SignUpPage } from './pages';
 import { Authenticator } from './settings/Authenticator';
+export { AuthenticatorsContextProvider, AuthLayout } from './pages/AuthLayout';
 
 export type AuthOptions = {
   components: Partial<{

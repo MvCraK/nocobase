@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const { run } = require('../util');
 const fg = require('fast-glob');
 
@@ -24,7 +33,7 @@ module.exports = (cli) => {
     const packageRoots = getPackagesDir(false);
     for (const dir of packageRoots) {
       try {
-        await run('yarn', ['test:server', '--coverage', dir]);
+        await run('yarn', ['test:server', dir, '--coverage']);
       } catch (e) {
         continue;
       }
@@ -35,7 +44,7 @@ module.exports = (cli) => {
     const packageRoots = getPackagesDir(true);
     for (const dir of packageRoots) {
       try {
-        await run('yarn', ['test:client', '--coverage', dir]);
+        await run('yarn', ['test:client', dir, '--coverage']);
       } catch (e) {
         continue;
       }

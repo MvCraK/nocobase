@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Schema } from '@formily/json-schema';
 import { BaseError } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -6,7 +15,7 @@ import { ErrorHandler } from './error-handler';
 import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';
 
-export class PluginErrorHandler extends Plugin {
+export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs = 'error-handler';
 
@@ -27,6 +36,10 @@ export class PluginErrorHandler extends Plugin {
 
       const collection = database.modelCollection.get(model);
 
+      if (!collection) {
+        return path;
+      }
+
       const field = collection.getField(path);
       const fieldOptions = Schema.compile(field?.options, { t: tFunc });
       const title = lodash.get(fieldOptions, 'uiSchema.title', path);
@@ -38,10 +51,12 @@ export class PluginErrorHandler extends Plugin {
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {
+            const t = ctx.i18n.t;
+            const title = findFieldTitle(err.instance, err.path, t, ctx);
             return {
-              message: ctx.i18n.t(err.type, {
+              message: t(err.type, {
                 ns: this.i18nNs,
-                field: findFieldTitle(err.instance, err.path, ctx.i18n.t, ctx),
+                field: t(title, { ns: 'lm-collections' }),
               }),
             };
           }),

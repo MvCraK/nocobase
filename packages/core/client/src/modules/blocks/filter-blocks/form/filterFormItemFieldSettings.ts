@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
@@ -8,6 +17,7 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { EditOperator, useDesignable, useValidateSchema } from '../../../../schema-component';
+import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 
 export const filterFormItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterFormItem',
@@ -175,6 +185,10 @@ export const filterFormItemFieldSettings = new SchemaSettings({
               };
             },
           },
+          {
+            name: 'setDefaultValue',
+            Component: SchemaSettingsDefaultValue,
+          } as any,
           {
             name: 'setValidationRules',
             type: 'modal',

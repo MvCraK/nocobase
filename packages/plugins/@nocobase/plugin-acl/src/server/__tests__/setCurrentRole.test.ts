@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { vi } from 'vitest';
 import Database from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
@@ -58,7 +67,7 @@ describe('role', () => {
     expect(ctx.state.currentRole).toBe('root');
   });
 
-  it('should throw 401', async () => {
+  it('should use default role when the role does not belong to the user', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
@@ -70,11 +79,7 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, {
-      code: 'ROLE_NOT_FOUND_ERR',
-      message: 'The user role does not exist. Please try signing in again',
-    });
-    expect(ctx.state.currentRole).not.toBeDefined();
+    expect(ctx.state.currentRole).toBe('root');
   });
 
   it('should set role with anonymous', async () => {

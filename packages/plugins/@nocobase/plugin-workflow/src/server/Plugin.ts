@@ -1,4 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import path from 'path';
+import { randomUUID } from 'crypto';
 
 import LRUCache from 'lru-cache';
 
@@ -29,7 +39,14 @@ type ID = number | string;
 
 type Pending = [ExecutionModel, JobModel?];
 
-type CachedEvent = [WorkflowModel, any, { context?: any }];
+type EventOptions = {
+  eventKey?: string;
+  context?: any;
+  deferred?: boolean;
+  [key: string]: any;
+} & Transactionable;
+
+type CachedEvent = [WorkflowModel, any, EventOptions];
 
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
@@ -45,33 +62,7 @@ export default class PluginWorkflowServer extends Plugin {
 
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
-
-  getLogger(workflowId: ID): Logger {
-    const now = new Date();
-    const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
-    const key = `${date}-${workflowId}}`;
-    if (this.loggerCache.has(key)) {
-      return this.loggerCache.get(key);
-    }
-
-    const logger = this.createLogger({
-      dirname: path.join('workflows', date),
-      filename: `${workflowId}.log`,
-      transports: [...(process.env.NODE_ENV !== 'production' ? ['console'] : ['file'])],
-    } as LoggerOptions);
-
-    this.loggerCache.set(key, logger);
-
-    return logger;
-  }
-
-  isWorkflowSync(workflow: WorkflowModel) {
-    const trigger = this.triggers.get(workflow.type);
-    if (!trigger) {
-      throw new Error(`invalid trigger type ${workflow.type} of workflow ${workflow.id}`);
-    }
-    return trigger.sync ?? workflow.sync;
-  }
+  private checker: NodeJS.Timeout = null;
 
   private onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
@@ -119,7 +110,41 @@ export default class PluginWorkflowServer extends Plugin {
     }
   };
 
-  registerTrigger<T extends Trigger>(type: string, trigger: T | { new (p: Plugin): T }) {
+  /**
+   * @experimental
+   */
+  getLogger(workflowId: ID): Logger {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
+    const key = `${date}-${workflowId}}`;
+    if (this.loggerCache.has(key)) {
+      return this.loggerCache.get(key);
+    }
+
+    const logger = this.createLogger({
+      dirname: path.join('workflows', String(workflowId)),
+      filename: '%DATE%.log',
+    } as LoggerOptions);
+
+    this.loggerCache.set(key, logger);
+
+    return logger;
+  }
+
+  /**
+   * @experimental
+   * @param {WorkflowModel} workflow
+   * @returns {boolean}
+   */
+  isWorkflowSync(workflow: WorkflowModel): boolean {
+    const trigger = this.triggers.get(workflow.type);
+    if (!trigger) {
+      throw new Error(`invalid trigger type ${workflow.type} of workflow ${workflow.id}`);
+    }
+    return trigger.sync ?? workflow.sync;
+  }
+
+  public registerTrigger<T extends Trigger>(type: string, trigger: T | { new (p: Plugin): T }) {
     if (typeof trigger === 'function') {
       this.triggers.register(type, new trigger(this));
     } else if (trigger) {
@@ -129,7 +154,10 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
-  registerInstruction(type: string, instruction: InstructionInterface | { new (p: Plugin): InstructionInterface }) {
+  public registerInstruction(
+    type: string,
+    instruction: InstructionInterface | { new (p: Plugin): InstructionInterface },
+  ) {
     if (typeof instruction === 'function') {
       this.instructions.register(type, new instruction(this));
     } else if (instruction) {
@@ -162,6 +190,9 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  /**
+   * @internal
+   */
   async load() {
     const { db, options } = this;
 
@@ -198,13 +229,11 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.acl.registerSnippet({
-      name: 'ui.*',
+      name: 'ui.workflows',
       actions: ['workflows:list'],
     });
 
-    this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
-
-    await this.importCollections(path.resolve(__dirname, 'collections'));
+    this.app.acl.allow('*', ['trigger'], 'loggedIn');
 
     this.db.addMigrations({
       namespace: this.name,
@@ -222,7 +251,10 @@ export default class PluginWorkflowServer extends Plugin {
     //   * load all workflows in db
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
-    this.app.on('beforeStart', async () => {
+    this.app.on('afterStart', async () => {
+      this.app.setMaintainingMessage('check for not started executions');
+      this.ready = true;
+
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
         filter: { enabled: true },
@@ -231,11 +263,11 @@ export default class PluginWorkflowServer extends Plugin {
       workflows.forEach((workflow: WorkflowModel) => {
         this.toggle(workflow);
       });
-    });
 
-    this.app.on('afterStart', () => {
-      this.app.setMaintainingMessage('check for not started executions');
-      this.ready = true;
+      this.checker = setInterval(() => {
+        this.dispatch();
+      }, 300_000);
+
       // check for not started executions
       this.dispatch();
     });
@@ -257,10 +289,14 @@ export default class PluginWorkflowServer extends Plugin {
       if (this.executing) {
         await this.executing;
       }
+
+      if (this.checker) {
+        clearInterval(this.checker);
+      }
     });
   }
 
-  toggle(workflow: WorkflowModel, enable?: boolean) {
+  private toggle(workflow: WorkflowModel, enable?: boolean) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
@@ -284,7 +320,7 @@ export default class PluginWorkflowServer extends Plugin {
   public trigger(
     workflow: WorkflowModel,
     context: object,
-    options: { [key: string]: any } & Transactionable = {},
+    options: EventOptions = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
     if (!this.ready) {
@@ -320,7 +356,7 @@ export default class PluginWorkflowServer extends Plugin {
   private async triggerSync(
     workflow: WorkflowModel,
     context: object,
-    options: { [key: string]: any } & Transactionable = {},
+    { deferred, ...options }: EventOptions = {},
   ): Promise<Processor | null> {
     let execution;
     try {
@@ -349,12 +385,28 @@ export default class PluginWorkflowServer extends Plugin {
     this.dispatch();
   }
 
+  /**
+   * Start a deferred execution
+   * @experimental
+   */
+  public start(execution: ExecutionModel) {
+    if (execution.status !== EXECUTION_STATUS.STARTED) {
+      return;
+    }
+    this.pending.push([execution]);
+    this.dispatch();
+  }
+
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
   }
 
-  private async createExecution(workflow: WorkflowModel, context, options): Promise<ExecutionModel | null> {
-    const { transaction = await this.db.sequelize.transaction() } = options;
+  private async createExecution(
+    workflow: WorkflowModel,
+    context,
+    options: EventOptions,
+  ): Promise<ExecutionModel | null> {
+    const { transaction = await this.db.sequelize.transaction(), deferred } = options;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
@@ -364,14 +416,23 @@ export default class PluginWorkflowServer extends Plugin {
       return null;
     }
 
-    const execution = await workflow.createExecution(
-      {
-        context,
-        key: workflow.key,
-        status: EXECUTION_STATUS.QUEUEING,
-      },
-      { transaction },
-    );
+    let execution;
+    try {
+      execution = await workflow.createExecution(
+        {
+          context,
+          key: workflow.key,
+          eventKey: options.eventKey ?? randomUUID(),
+          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+        },
+        { transaction },
+      );
+    } catch (err) {
+      if (!options.transaction) {
+        await transaction.rollback();
+      }
+      throw err;
+    }
 
     this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
@@ -420,7 +481,7 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (execution && !this.executing && !this.pending.length) {
+      if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
       }
     } catch (err) {
@@ -452,35 +513,37 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.executing = (async () => {
       let next: Pending | null = null;
-      // resuming has high priority
-      if (this.pending.length) {
-        next = this.pending.shift() as Pending;
-        this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
-      } else {
-        const execution = (await this.db.getRepository('executions').findOne({
-          filter: {
-            status: EXECUTION_STATUS.QUEUEING,
-            'workflow.enabled': true,
-            'workflow.id': {
-              [Op.not]: null,
+      try {
+        // resuming has high priority
+        if (this.pending.length) {
+          next = this.pending.shift() as Pending;
+          this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
+        } else {
+          const execution = (await this.db.getRepository('executions').findOne({
+            filter: {
+              status: EXECUTION_STATUS.QUEUEING,
+              'workflow.enabled': true,
+              'workflow.id': {
+                [Op.not]: null,
+              },
             },
-          },
-          appends: ['workflow'],
-          sort: 'createdAt',
-        })) as ExecutionModel;
-        if (execution) {
-          this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
-          next = [execution];
+            appends: ['workflow'],
+            sort: 'id',
+          })) as ExecutionModel;
+          if (execution) {
+            this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
+            next = [execution];
+          }
         }
-      }
-      if (next) {
-        await this.process(...next);
-      }
+        if (next) {
+          await this.process(...next);
+        }
+      } finally {
+        this.executing = null;
 
-      this.executing = null;
-
-      if (next) {
-        this.dispatch();
+        if (next) {
+          this.dispatch();
+        }
       }
     })();
   }
@@ -511,6 +574,13 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
+  /**
+   * @experimental
+   * @param {string} dataSourceName
+   * @param {Transaction} transaction
+   * @param {boolean} create
+   * @returns {Trasaction}
+   */
   useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
     // @ts-ignore
     const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;

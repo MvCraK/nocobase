@@ -1,19 +1,39 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { OpenSize } from './';
+import { ActionDrawerProps, OpenSize } from './types';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ComposedActionDrawer } from './types';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { ErrorFallback } from '../error-fallback';
+
+const DrawerErrorFallback: React.FC<FallbackProps> = (props) => {
+  const { visible, setVisible } = useActionContext();
+  return (
+    <Drawer open={visible} onClose={() => setVisible(false, true)} width="50%">
+      <ErrorFallback {...props} />
+    </Drawer>
+  );
+};
 
 const openSizeWidthMap = new Map<OpenSize, string>([
   ['small', '30%'],
   ['middle', '50%'],
   ['large', '70%'],
 ]);
-export const ActionDrawer: ComposedActionDrawer = observer(
+export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
   (props) => {
     const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
     const { visible, setVisible, openSize = 'middle', drawerProps, modalProps } = useActionContext();
@@ -72,6 +92,12 @@ export const ActionDrawer: ComposedActionDrawer = observer(
     );
   },
   { displayName: 'ActionDrawer' },
+);
+
+export const ActionDrawer: ComposedActionDrawer = (props) => (
+  <ErrorBoundary FallbackComponent={DrawerErrorFallback} onError={(err) => console.log(err)}>
+    <InternalActionDrawer {...props} />
+  </ErrorBoundary>
 );
 
 ActionDrawer.Footer = observer(

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
@@ -29,6 +38,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
       'x-disabled': '{{ !createOnly }}',
+      'x-visible': '{{!createMainOnly}}',
     },
     name: {
       type: 'string',
@@ -97,6 +107,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       default: false,
+      'x-visible': '{{!createMainOnly}}',
     },
     sources: {
       type: 'array',
@@ -108,6 +119,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-disabled': true,
+      'x-visible': '{{!createMainOnly}}',
     },
     fields: {
       type: 'array',
@@ -136,9 +148,9 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
     },
     filterTargetKey: {
-      title: `{{ t("Filter target key")}}`,
+      title: `{{ t("Record unique key")}}`,
       type: 'single',
-      description: `{{t( "Filter data based on the specific field, with the requirement that the field value must be unique.")}}`,
+      description: `{{t( "If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.")}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],

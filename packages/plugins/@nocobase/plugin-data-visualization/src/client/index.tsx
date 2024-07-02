@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/client';
 import {
   ChartV2Block,
@@ -17,7 +26,7 @@ import {
 } from './filter';
 import { lang } from './locale';
 
-class DataVisualizationPlugin extends Plugin {
+class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
   async load() {
@@ -44,7 +53,7 @@ class DataVisualizationPlugin extends Plugin {
   }
 }
 
-export default DataVisualizationPlugin;
+export default PluginDataVisualiztionClient;
 export { Chart } from './chart/chart';
 export type { ChartProps, ChartType, RenderProps } from './chart/chart';
 export { ChartConfigContext } from './configure';

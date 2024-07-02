@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
@@ -6,19 +15,16 @@ import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
 import { BasicAuth } from './basic-auth';
-import { enUS, zhCN } from './locale';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
+import { tval } from '@nocobase/utils';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
   afterAdd() {}
   async beforeLoad() {
-    this.app.i18n.addResources('zh-CN', namespace, zhCN);
-    this.app.i18n.addResources('en-US', namespace, enUS);
-
     this.app.db.registerModels({ AuthModel });
   }
 
@@ -52,7 +58,7 @@ export class PluginAuthServer extends Plugin {
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
-      title: 'Password',
+      title: tval('Password', { ns: namespace }),
     });
     // Register actions
     Object.entries(authActions).forEach(

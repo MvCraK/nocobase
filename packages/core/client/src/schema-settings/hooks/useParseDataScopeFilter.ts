@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { flatten, unflatten } from '@nocobase/utils/client';
 import { useCallback } from 'react';
 import { useLocalVariables, useVariables } from '../../variables';
@@ -54,7 +63,7 @@ const useParseDataScopeFilter = ({ exclude = defaultExclude }: Props = {}) => {
         Object.keys(flat).map(async (key) => {
           flat[key] = await flat[key];
           if (flat[key] === undefined) {
-            flat[key] = null;
+            delete flat[key];
           }
           return flat[key];
         }),

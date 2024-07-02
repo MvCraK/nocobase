@@ -1,5 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection } from './collection';
-import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeOptions } from './types';
+import {
+  CollectionOptions,
+  ICollection,
+  ICollectionManager,
+  IFieldInterface,
+  IRepository,
+  MergeOptions,
+} from './types';
 
 export class CollectionManager implements ICollectionManager {
   protected collections = new Map<string, ICollection>();
@@ -8,9 +24,13 @@ export class CollectionManager implements ICollectionManager {
 
   constructor(options = {}) {}
 
+  /* istanbul ignore next -- @preserve */
   getRegisteredFieldType(type) {}
+
+  /* istanbul ignore next -- @preserve */
   getRegisteredFieldInterface(key: string) {}
 
+  /* istanbul ignore next -- @preserve */
   getRegisteredModel(key: string) {
     return this.models.get(key);
   }
@@ -22,8 +42,22 @@ export class CollectionManager implements ICollectionManager {
     return this.repositories.get(key);
   }
 
+  /* istanbul ignore next -- @preserve */
   registerFieldTypes() {}
-  registerFieldInterfaces() {}
+
+  registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>) {
+    Object.keys(interfaces).forEach((key) => {
+      this.registerFieldInterface(key, interfaces[key]);
+    });
+  }
+
+  registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void {}
+
+  getFieldInterface(name: string): { new (options: any): IFieldInterface | undefined } {
+    return;
+  }
+
+  /* istanbul ignore next -- @preserve */
   registerCollectionTemplates() {}
 
   registerModels(models: Record<string, any>) {
@@ -46,6 +80,7 @@ export class CollectionManager implements ICollectionManager {
 
   extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ICollection {
     const collection = this.getCollection(collectionOptions.name);
+    collection.updateOptions(collectionOptions, mergeOptions);
     return collection;
   }
 
@@ -68,7 +103,8 @@ export class CollectionManager implements ICollectionManager {
 
   async sync() {}
 
-  protected newCollection(options) {
+  protected newCollection(options): ICollection {
+    // @ts-ignore
     return new Collection(options, this);
   }
 }

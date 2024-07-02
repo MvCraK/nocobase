@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { set } from 'lodash';
 import React, { createElement } from 'react';
 import { Outlet } from 'react-router-dom';
@@ -54,12 +63,19 @@ export class PluginSettingsManager {
     });
   }
 
+  clearCache() {
+    this.cachedList = {};
+  }
+
   setAclSnippets(aclSnippets: string[]) {
     this.aclSnippets = aclSnippets;
   }
 
   getAclSnippet(name: string) {
     const setting = this.settings[name];
+    if (setting?.skipAclConfigure) {
+      return null;
+    }
     return setting?.aclSnippet ? setting.aclSnippet : `${SNIPPET_PREFIX}${name}`;
   }
 
@@ -155,6 +171,8 @@ export class PluginSettingsManager {
   }
 
   getAclSnippets() {
-    return Object.keys(this.settings).map((name) => this.getAclSnippet(name));
+    return Object.keys(this.settings)
+      .map((name) => this.getAclSnippet(name))
+      .filter(Boolean);
   }
 }

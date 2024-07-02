@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { Dispatch, SetStateAction } from 'react';
 import { CollectionFieldOptions_deprecated } from '../collection-manager';
 
@@ -77,4 +86,13 @@ export interface VariableOption {
   };
   /** 变量所对应的数据表的名称 */
   collectionName?: string;
+  /** 数据表所对应的数据源 */
+  dataSource?: string;
+  /**
+   * @default null
+   * 表示当变量解析出来的值是一个 undefined 时，最终应该返回的值。
+   * 默认是 null，这样可以保证数据范围中的 filter 条件不会被清除掉，
+   * 如果想让数据范围中的 filter 条件被清除掉，可以设置 defaultValue 为 undefined。
+   */
+  defaultValue?: any;
 }

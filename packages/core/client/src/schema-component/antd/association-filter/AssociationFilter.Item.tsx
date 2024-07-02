@@ -1,8 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
 import { useToken } from '../__builtins__';
@@ -10,7 +20,6 @@ import { EllipsisWithTooltip } from '../input';
 import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
 import { AssociationFilter } from './AssociationFilter';
 import useStyles from './AssociationFilter.Item.style';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const { Panel } = Collapse;
 

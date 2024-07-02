@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -13,14 +22,12 @@ import { useCollectionField } from '../../../../data-source';
 const enableLink = {
   name: 'enableLink',
   type: 'switch',
-  useVisible() {
-    const field = useField();
-    return field.readPretty;
-  },
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
     const { dn } = useDesignable();
     return {
       title: t('Enable link'),
@@ -61,7 +68,7 @@ const titleField: any = {
     return {
       title: t('Title field'),
       options,
-      value: field?.componentProps?.fieldNames?.label,
+      value: fieldSchema?.['x-component-props']?.['fieldNames']?.label,
       onChange(label) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -150,7 +157,7 @@ export const tagComponentFieldSettings = new SchemaSettings({
         return {
           title: t('Tag color field'),
           options: colorFieldOptions,
-          value: field?.componentProps?.tagColorField,
+          value: fieldSchema?.['x-component-props']?.['tagColorField'],
           onChange(tagColorField) {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],

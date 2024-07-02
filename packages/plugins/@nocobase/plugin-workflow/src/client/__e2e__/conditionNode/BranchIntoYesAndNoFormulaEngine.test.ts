@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { faker } from '@faker-js/faker';
 import {
-  ClculationNode,
+  CalculationNode,
   CollectionTriggerNode,
   ConditionBranchNode,
   QueryRecordNode,
@@ -72,7 +81,11 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ControlOrMeta+ArrowRight');
+  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -85,7 +98,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -98,7 +111,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -188,7 +201,8 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 50 });
+  await page.waitForTimeout(500);
+  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -201,7 +215,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -214,7 +228,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -304,7 +318,11 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ControlOrMeta+ArrowRight');
+  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -317,7 +335,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -330,7 +348,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -420,7 +438,8 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 50 });
+  await page.waitForTimeout(500);
+  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -433,7 +452,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -446,7 +465,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -559,6 +578,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
+  await page.waitForTimeout(500);
   await page.keyboard.type('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
@@ -576,7 +596,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -589,7 +609,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -709,6 +729,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
+  await page.waitForTimeout(500);
   await page.keyboard.type('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
@@ -726,7 +747,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -739,7 +760,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -849,6 +870,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
+  await page.waitForTimeout(500);
   await page.keyboard.type('!=', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
@@ -866,7 +888,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -879,7 +901,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');
@@ -993,6 +1015,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
+  await page.waitForTimeout(500);
   await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
@@ -1006,7 +1029,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(noBranchcalCulationNodeName);
-  const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
+  const noBranchcalCulationNode = new CalculationNode(page, noBranchcalCulationNodeName);
   const noBranchcalCulationNodeId = await noBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await noBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('0');
@@ -1019,7 +1042,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
     .getByLabel('Calculation-Calculation', { exact: true })
     .getByRole('textbox')
     .fill(yesBranchcalCulationNodeName);
-  const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
+  const yesBranchcalCulationNode = new CalculationNode(page, yesBranchcalCulationNodeName);
   const yesBranchcalCulationNodeId = await yesBranchcalCulationNode.node.locator('.workflow-node-id').innerText();
   await yesBranchcalCulationNode.nodeConfigure.click();
   await page.getByLabel('textbox').fill('1');

@@ -1,13 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { css, cx } from '@emotion/css';
 import { ObjectField } from '@formily/core';
 import { useField } from '@formily/react';
 import classnames from 'classnames';
 import React from 'react';
-import { css, cx } from '@emotion/css';
 import { useDesignable } from '../../hooks';
 
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { RecordProvider } from '../../../record-provider';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export const ListItem = withDynamicSchemaProps((props) => {
   const field = useField<ObjectField>();

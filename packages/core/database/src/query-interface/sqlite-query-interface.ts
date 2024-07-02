@@ -1,3 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore file -- @preserve */
+
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
 import QueryInterface, { TableInfo } from './query-interface';
@@ -92,11 +103,11 @@ export default class SqliteQueryInterface extends QueryInterface {
     return Promise.resolve(undefined);
   }
 
-  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string }): Promise<{
+  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string; transaction: Transaction }): Promise<{
     seqName?: string;
     currentVal: number;
   }> {
-    const { tableInfo } = options;
+    const { tableInfo, transaction } = options;
 
     const tableName = tableInfo.tableName;
 
@@ -104,7 +115,7 @@ export default class SqliteQueryInterface extends QueryInterface {
                  FROM sqlite_sequence
                  WHERE name = '${tableName}';`;
 
-    const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
+    const results = await this.db.sequelize.query(sql, { type: 'SELECT', transaction });
 
     const row = results[0];
 

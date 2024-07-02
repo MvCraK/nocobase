@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
@@ -22,6 +31,8 @@ interface Props {
   value: any;
   collectionField: CollectionFieldOptions_deprecated;
   onChange: (value: any) => void;
+  style?: React.CSSProperties;
+  componentProps?: any;
 }
 
 export const DynamicComponent = (props: Props) => {
@@ -41,15 +52,17 @@ export const DynamicComponent = (props: Props) => {
     });
   }, [JSON.stringify(props.value), props.schema]);
   const renderSchemaComponent = useCallback(() => {
+    const componentProps = merge(props?.schema?.['x-component-props'] || {}, props.componentProps || {});
     return (
       <FieldContext.Provider value={null}>
         <SchemaComponent
           schema={{
             'x-component': 'Input',
             ...props.schema,
-            'x-component-props': merge(props?.schema?.['x-component-props'] || {}, {
+            'x-component-props': merge(componentProps, {
               style: {
                 minWidth: 150,
+                ...props.style,
               },
             }),
             name: 'value',
@@ -75,3 +88,5 @@ export const DynamicComponent = (props: Props) => {
     </FormContext.Provider>
   );
 };
+
+export const FilterDynamicComponent = DynamicComponent;

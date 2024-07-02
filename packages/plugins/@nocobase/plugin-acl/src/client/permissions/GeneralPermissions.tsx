@@ -1,4 +1,13 @@
-import { onFormValuesChange, createForm, Form } from '@formily/core';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { onFormValuesChange, createForm, Form, onFieldChange } from '@formily/core';
 import { connect } from '@formily/react';
 import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
 import { Checkbox, message } from 'antd';
@@ -67,7 +76,7 @@ export const GeneralPermissions: React.FC<{
   const update = useMemoizedFn(async (form: Form) => {
     await api.resource('roles').update({
       filterByTk: role.name,
-      values: form.values,
+      values: { snippets: form.values.snippets },
     });
     setRole({ ...role, ...form.values });
     message.success(t('Saved successfully'));

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
@@ -217,6 +226,10 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     if (packageJsonName === '@nocobase/test') {
       paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
+      paths[`${packageJsonName}/web`] = [`${relativePath}/src/web`];
+    }
+    if (packageJsonName === '@nocobase/client') {
+      paths[`${packageJsonName}/demo-utils`] = [`${relativePath}/src/demo-utils`];
     }
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
@@ -273,6 +286,7 @@ function buildIndexHtml(force = false) {
   const data = fs.readFileSync(tpl, 'utf-8');
   const replacedData = data
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, process.env.API_CLIENT_STORAGE_PREFIX)
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
@@ -288,6 +302,7 @@ exports.initEnv = function initEnv() {
     APP_KEY: 'test-jwt-secret',
     APP_PORT: 13000,
     API_BASE_PATH: '/api/',
+    API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
     DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
     DB_TIMEZONE: '+00:00',

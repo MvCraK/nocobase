@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useCollectionDataSource } from '@nocobase/client';
 import { isValidFilter } from '@nocobase/utils/client';
 
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { collection, filter } from '../schemas/collection';
-import { Instruction } from '.';
+import { Instruction, useNodeSavedConfig } from '.';
 import { NAMESPACE, lang } from '../locale';
 
 export default class extends Instruction {
@@ -14,6 +23,7 @@ export default class extends Instruction {
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useNodeSavedConfig(["collection"]) }}',
       'x-reactions': [
         ...collection['x-reactions'],
         {
@@ -48,6 +58,7 @@ export default class extends Instruction {
     },
   };
   scope = {
+    useNodeSavedConfig,
     useCollectionDataSource,
   };
   components = {

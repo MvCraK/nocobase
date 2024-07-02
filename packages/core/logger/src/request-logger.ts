@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { getLoggerFilePath } from './config';
-import { LoggerOptions, createLogger } from './logger';
+import { Logger, LoggerOptions } from './logger';
 import { pick } from 'lodash';
 const defaultRequestWhitelist = [
   'action',
@@ -7,6 +16,8 @@ const defaultRequestWhitelist = [
   'header.x-hostname',
   'header.x-timezone',
   'header.x-locale',
+  'header.x-authenticator',
+  'header.x-data-source',
   'referer',
 ];
 const defaultResponseWhitelist = ['status'];
@@ -17,15 +28,7 @@ export interface RequestLoggerOptions extends LoggerOptions {
   responseWhitelist?: string[];
 }
 
-/**
- * @internal
- */
-export const requestLogger = (appName: string, options?: RequestLoggerOptions) => {
-  const requestLogger = createLogger({
-    dirname: getLoggerFilePath(appName),
-    filename: 'request',
-    ...(options || {}),
-  });
+export const requestLogger = (appName: string, requestLogger: Logger, options?: RequestLoggerOptions) => {
   return async (ctx, next) => {
     const reqId = ctx.reqId;
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);

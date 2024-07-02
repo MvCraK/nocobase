@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useDebounce } from 'ahooks';
@@ -33,6 +42,13 @@ export interface AllowedActions {
   view: number[];
   update: number[];
   destroy: number[];
+}
+
+function hasIntersection(arr1: any[], arr2: any[]) {
+  if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
+    return false;
+  }
+  return arr1.some((item) => arr2.includes(item));
 }
 
 const LocalPlugins = () => {
@@ -92,7 +108,7 @@ const LocalPlugins = () => {
   const keyWordsfilterList = useMemo(() => {
     const list = keyWordlists.map((i) => {
       if (i === 'Others') {
-        const result = data?.data.filter((v) => !v.keywords || !v.keywords.every((k) => keyWordlists.includes(k)));
+        const result = data?.data.filter((v) => !hasIntersection(v.keywords, keyWordlists));
         return {
           key: i,
           list: result,

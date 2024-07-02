@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
-import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
+import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 export const CreateChildInitializer = (props) => {
   const schema = {
     type: 'void',
@@ -13,7 +22,7 @@ export const CreateChildInitializer = (props) => {
       openMode: 'drawer',
       type: 'link',
       addChild: true,
-      style: { padding: '0px', marginTop: '-5px' },
+      style: { height: 'auto', lineHeight: 'normal' },
       component: 'CreateRecordAction',
     },
     properties: {
@@ -29,7 +38,10 @@ export const CreateChildInitializer = (props) => {
             type: 'void',
             'x-component': 'Tabs',
             'x-component-props': {},
-            'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+            'x-initializer': 'popup:addTab',
+            'x-initializer-props': {
+              gridInitializer: 'popup:addNew:addBlock',
+            },
             properties: {
               tab1: {
                 type: 'void',
@@ -52,5 +64,5 @@ export const CreateChildInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

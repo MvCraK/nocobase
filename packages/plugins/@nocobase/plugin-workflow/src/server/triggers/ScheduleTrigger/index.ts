@@ -1,7 +1,14 @@
-import { Transactionable } from 'sequelize';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Trigger from '..';
 import type Plugin from '../../Plugin';
-import { WorkflowModel } from '../../types';
 import DateFieldScheduleTrigger from './DateFieldScheduleTrigger';
 import StaticScheduleTrigger from './StaticScheduleTrigger';
 import { SCHEDULE_MODE } from './utils';
@@ -38,16 +45,17 @@ export default class ScheduleTrigger extends Trigger {
     }
   }
 
-  async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
-    if (!context.date) {
-      return false;
-    }
-    const existed = await workflow.countExecutions({
-      where: {
-        'context.date': context.date,
-      },
-      transaction: options.transaction,
-    });
-    return !existed;
-  }
+  // async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
+  //   if (!context.date) {
+  //     return false;
+  //   }
+  //   const existed = await workflow.getExecutions({
+  //     attributes: ['id'],
+  //     where: {
+  //       'context.date': context.date instanceof Date ? context.date.toISOString() : context.date,
+  //     },
+  //     transaction: options.transaction,
+  //   });
+  //   return !existed.length;
+  // }
 }

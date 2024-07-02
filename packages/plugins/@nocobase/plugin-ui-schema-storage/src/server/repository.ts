@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '@nocobase/cache';
 import { Repository, Transaction, Transactionable } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
@@ -187,6 +196,26 @@ export class UiSchemaRepository extends Repository {
       });
     }
     return this.doGetProperties(uid, options);
+  }
+
+  async getParentJsonSchema(uid: string, options: GetJsonSchemaOptions = {}) {
+    const parentUid = await this.findParentUid(uid, options.transaction);
+
+    if (!parentUid) {
+      return null;
+    }
+
+    return this.getJsonSchema(parentUid, options);
+  }
+
+  async getParentProperty(uid: string, options: GetPropertiesOptions = {}) {
+    const parentUid = await this.findParentUid(uid, options.transaction);
+
+    if (!parentUid) {
+      return null;
+    }
+
+    return this.getJsonSchema(parentUid, options);
   }
 
   async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayCollapse, ArrayItems, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
@@ -6,9 +15,11 @@ import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection_deprecated, useCollectionManager_deprecated, useSortFields } from '../../../collection-manager';
+import { useFilterByTk } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { useCollectionManager_deprecated, useCollection_deprecated, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
@@ -16,17 +27,16 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
-import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
-import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;

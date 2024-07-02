@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { ComponentType } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
@@ -12,7 +21,7 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp(Demo: ComponentType, props: any = {}) {
+function renderAppOptions(Demo: ComponentType, props: any = {}) {
   const app = new Application({
     dataSourceManager: {
       collections: collections as any,
@@ -60,7 +69,7 @@ describe('AssociationProvider', () => {
       );
     };
 
-    renderApp(Demo, { name: 'users.roles' });
+    renderAppOptions(Demo, { name: 'users.roles' });
 
     expect(screen.getByTestId('collection')).toHaveTextContent('roles');
     expect(screen.getByTestId('parent-collection')).toHaveTextContent('users');
@@ -81,7 +90,7 @@ describe('AssociationProvider', () => {
       );
     };
 
-    renderApp(Demo, { name: 'users.roles', dataSource: 'a' });
+    renderAppOptions(Demo, { name: 'users.roles', dataSource: 'a' });
 
     expect(screen.getByTestId('collection')).toHaveTextContent('roles');
     expect(screen.getByTestId('parent-collection')).toHaveTextContent('users');
@@ -92,8 +101,11 @@ describe('AssociationProvider', () => {
     const Demo = () => {
       return <div>Demo</div>;
     };
-    renderApp(Demo, { name: 'users.not-exists' });
+    renderAppOptions(Demo, { name: 'users.not-exists' });
 
-    expect(document.body.innerHTML).toContain('ant-result');
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(
+      screen.getByText('The collection "users.not-exists" may have been deleted. Please remove this block.'),
+    ).toBeInTheDocument();
   });
 });

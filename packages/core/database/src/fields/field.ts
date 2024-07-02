@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import _ from 'lodash';
 import { DataType, ModelAttributeColumnOptions, ModelIndexesOptions, SyncOptions, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
@@ -48,6 +57,10 @@ export abstract class Field {
   }
 
   abstract get dataType();
+
+  isRelationField() {
+    return false;
+  }
 
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({

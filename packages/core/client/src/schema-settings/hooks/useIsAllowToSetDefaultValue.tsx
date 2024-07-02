@@ -1,12 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions_deprecated } from '../..';
-import { isSystemField } from '../SchemaSettings';
-import { isPatternDisabled } from '../isPatternDisabled';
-import { useFormBlockContext, useFormBlockType } from '../../block-provider';
+import { useFormBlockContext, useFormBlockType } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../collection-manager/hooks/useCollectionManager_deprecated';
 import { useCollection_deprecated } from '../../collection-manager/hooks/useCollection_deprecated';
+import { CollectionFieldOptions_deprecated } from '../../collection-manager/types';
+import { isSystemField } from '../SchemaSettings';
+import { isPatternDisabled } from '../isPatternDisabled';
 
 interface DefaultValueProviderProps {
   isAllowToSetDefaultValue: (params: IsAllowToSetDefaultValueParams) => boolean;

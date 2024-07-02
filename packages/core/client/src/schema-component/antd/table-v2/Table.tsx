@@ -1,20 +1,29 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
-import { useCreation } from 'ahooks';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
+import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
@@ -25,14 +34,13 @@ import {
   useTableBlockContext,
   useTableSelectorContext,
 } from '../../../';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { useInView } from 'react-intersection-observer';
 
 const MemoizedAntdTable = React.memo(AntdTable);
 
@@ -43,6 +51,23 @@ const useArrayField = (props) => {
 
 function getSchemaArrJSON(schemaArr: Schema[]) {
   return schemaArr.map((item) => (item.name === 'actions' ? omit(item.toJSON(), 'properties') : item.toJSON()));
+}
+function adjustColumnOrder(columns) {
+  const leftFixedColumns = [];
+  const normalColumns = [];
+  const rightFixedColumns = [];
+
+  columns.forEach((column) => {
+    if (column.fixed === 'left') {
+      leftFixedColumns.push(column);
+    } else if (column.fixed === 'right') {
+      rightFixedColumns.push(column);
+    } else {
+      normalColumns.push(column);
+    }
+  });
+
+  return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
 }
 
 export const useColumnsDeepMemoized = (columns: any[]) => {
@@ -71,13 +96,13 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return buf;
   }, []);
 
-  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
+  // const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.marginSM}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.margin}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM]);
@@ -101,7 +126,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           width: 200,
           ...s['x-component-props'],
           render: (v, record) => {
-            if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
+            // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
+            // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
@@ -124,15 +150,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
-    [
-      hasChangedColumns,
-      schema,
-      field,
-      parentRecordData,
-      schemaInWhitelist,
-      token.paddingContentVerticalLG,
-      token.marginSM,
-    ],
+    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {
@@ -145,9 +163,11 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
+        render: designable ? () => <div style={{ minWidth: 180 }} /> : null,
+        fixed: designable ? 'right' : 'none',
       },
     ];
+
     if (props.showDel) {
       res.push({
         title: '',
@@ -176,7 +196,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
       });
     }
 
-    return res;
+    return adjustColumnOrder(res);
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
@@ -221,10 +241,10 @@ const SortableRow = (props) => {
 
 const SortHandle = (props) => {
   const { id, ...otherProps } = props;
-  const { listeners } = useSortable({
+  const { listeners, setNodeRef } = useSortable({
     id,
   });
-  return <MenuOutlined {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
+  return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
 };
 
 const TableIndex = (props) => {
@@ -285,10 +305,13 @@ const cellClass = css`
   }
 `;
 
+const floatLeftClass = css`
+  float: left;
+`;
+
 const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
-  float: left;
   align-items: center;
   justify-content: space-evenly;
   padding-right: 8px;
@@ -516,7 +539,7 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Button active />}
+            {inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
           </td>
         );
       },
@@ -535,7 +558,7 @@ export const Table: any = withDynamicSchemaProps(
           cell: BodyCellComponent,
         },
       };
-    }, [bodyWrapperComponent]);
+    }, [BodyCellComponent, bodyWrapperComponent]);
 
     const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
 
@@ -574,7 +597,7 @@ export const Table: any = withDynamicSchemaProps(
                   <div
                     role="button"
                     aria-label={`table-index-${index}`}
-                    className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                    className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
                       [rowSelectCheckboxWrapperClassHover]: isRowSelect,
                     })}
                   >
@@ -627,23 +650,19 @@ export const Table: any = withDynamicSchemaProps(
       },
       [field, dragSort, getRowKey],
     );
-    const fieldSchema = useFieldSchema();
-    const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
-    const { height: tableHeight, tableSizeRefCallback } = useTableSize(fixedBlock);
+    const { height: tableHeight, tableSizeRefCallback } = useTableSize();
     const maxContent = useMemo(() => {
       return {
         x: 'max-content',
       };
     }, []);
     const scroll = useMemo(() => {
-      return fixedBlock
-        ? {
-            x: 'max-content',
-            y: tableHeight,
-          }
-        : maxContent;
-    }, [fixedBlock, tableHeight, maxContent]);
+      return {
+        x: 'max-content',
+        y: tableHeight,
+      };
+    }, [tableHeight, maxContent]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
@@ -667,7 +686,6 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
-
     return (
       <div
         className={css`
@@ -681,6 +699,9 @@ export const Table: any = withDynamicSchemaProps(
                 height: 100%;
                 display: flex;
                 flex-direction: column;
+                .ant-table-body {
+                  min-height: ${tableHeight}px;
+                }
               }
             }
           }

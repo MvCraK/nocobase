@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as _, default as lodash } from 'lodash';
@@ -17,6 +26,7 @@ import { Model } from './model';
 import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import safeJsonStringify from 'safe-json-stringify';
 
 export type RepositoryType = typeof Repository;
 
@@ -106,7 +116,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * - 'user' - collection is from user
    */
   origin?: string;
-
+  asStrategyResource?: boolean;
   [key: string]: any;
 }
 
@@ -200,7 +210,7 @@ export class Collection<
   }
 
   /**
-   * TODO
+   * @internal
    */
   modelInit() {
     if (this.model) {
@@ -232,6 +242,8 @@ export class Collection<
     // @ts-ignore
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
+
+    this.model.options.modelName = this.options.name;
 
     if (!autoGenId) {
       this.model.removeAttribute('id');
@@ -275,6 +287,7 @@ export class Collection<
   getFields() {
     return [...this.fields.values()];
   }
+
   addField(name: string, options: FieldOptions): Field {
     return this.setField(name, options);
   }
@@ -305,6 +318,9 @@ export class Collection<
     }
   }
 
+  /**
+   * @internal
+   */
   correctOptions(options) {
     if (options.primaryKey && options.autoIncrement) {
       delete options.defaultValue;
@@ -317,6 +333,12 @@ export class Collection<
     this.checkFieldType(name, options);
 
     const { database } = this.context;
+
+    database.logger.trace(`beforeSetField: ${safeJsonStringify(options)}`, {
+      databaseInstanceId: database.instanceId,
+      collectionName: this.name,
+      fieldName: name,
+    });
 
     if (options.source) {
       const [sourceCollectionName, sourceFieldName] = options.source.split('.');
@@ -547,9 +569,6 @@ export class Collection<
     return field as Field;
   }
 
-  /**
-   * TODO
-   */
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
@@ -586,12 +605,6 @@ export class Collection<
     }
   }
 
-  /**
-   * TODO
-   *
-   * @param name
-   * @param options
-   */
   updateField(name: string, options: FieldOptions) {
     if (!this.hasField(name)) {
       throw new Error(`field ${name} not exists`);
@@ -653,6 +666,7 @@ export class Collection<
       if (lodash.isEqual(item.fields, indexName)) {
         return;
       }
+
       const name: string = item.fields.join(',');
       if (name.startsWith(`${indexName.join(',')},`)) {
         return;
@@ -690,9 +704,13 @@ export class Collection<
     this.model._indexes = indexes.filter((item) => {
       return !lodash.isEqual(item.fields, fields);
     });
+
     this.refreshIndexes();
   }
 
+  /**
+   * @internal
+   */
   refreshIndexes() {
     // @ts-ignore
     const indexes: any[] = this.model._indexes;
@@ -701,14 +719,10 @@ export class Collection<
     this.model._indexes = lodash.uniqBy(
       indexes
         .filter((item) => {
-          return item.fields.every((field) =>
-            Object.values(this.model.rawAttributes).find((fieldVal) => fieldVal.field === field),
-          );
+          return item.fields.every((field) => this.model.rawAttributes[field]);
         })
         .map((item) => {
-          if (this.options.underscored) {
-            item.fields = item.fields.map((field) => snakeCase(field));
-          }
+          item.fields = item.fields.map((field) => this.model.rawAttributes[field].field);
           return item;
         }),
       'name',

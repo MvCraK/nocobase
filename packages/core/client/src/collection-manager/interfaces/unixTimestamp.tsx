@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { dateTimeProps, defaultProps, operators } from './properties';
 
@@ -14,7 +23,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       type: 'number',
       'x-component': 'UnixTimestamp',
       'x-component-props': {
-        accuracy: 'millisecond',
+        accuracy: 'second',
         showTime: true,
       },
     },
@@ -28,7 +37,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       title: '{{t("Accuracy")}}',
       'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      default: 'millisecond',
+      default: 'second',
       enum: [
         { value: 'millisecond', label: '{{t("Millisecond")}}' },
         { value: 'second', label: '{{t("Second")}}' },
