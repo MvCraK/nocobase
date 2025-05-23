@@ -107,7 +107,11 @@ function getFilteredFormValues(form) {
   });
   const readonlyPaths = _.uniq(
     allFields
-      .filter((field) => field?.componentProps?.readOnlySubmit)
+      .filter((field) => {
+        const segments = field.path?.segments || [];
+        const path = segments.length <= 1 ? segments.join('.') : segments.slice(0, -1).join('.');
+        return field?.componentProps?.readOnlySubmit && !get(values, path)[field?.componentProps.filterTargetKey];
+      })
       .map((field) => {
         const segments = field.path?.segments || [];
         if (segments.length <= 1) {
@@ -117,12 +121,11 @@ function getFilteredFormValues(form) {
       }),
   );
   readonlyPaths.forEach((path, index) => {
-    if (index !== 0 || path.includes('.')) {
+    if ((index !== 0 || path.includes('.')) && !values[path]) {
       // 清空值，但跳过第一层
       _.unset(values, path);
     }
   });
-
   return values;
 }
 
@@ -1065,10 +1068,11 @@ export const useDestroyActionProps = () => {
 
       const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
       if (count % pageSize === 1 && page !== 1) {
-        service.run({
-          ...service?.params?.[0],
-          page: page - 1,
-        });
+        const currentPage = service.params[0]?.page;
+        const totalPage = service.data?.meta?.totalPage;
+        if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
+          service.params[0].page = currentPage - 1;
+        }
       }
       if (callBack) {
         callBack?.();
